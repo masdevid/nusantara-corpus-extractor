@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+
+.venv/
+venv/
+env/
+
+.DS_Store
+
+# Local source material and generated extraction output
+outputs/
+*.pdf
+*.jsonl
+
+# Local tooling and test artifacts
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/

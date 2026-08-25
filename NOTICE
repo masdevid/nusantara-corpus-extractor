@@ -1,0 +1,11 @@
+Nusantara Corpus PDF Extractor
+
+Copyright (c) 2026 masdevid (DepodTech)
+
+The MIT License in LICENSE applies to the original source code,
+skill definitions, templates, references, and documentation in this
+repository unless a file states otherwise.
+
+Third-party dependencies, OCR engines and language data, input dictionaries,
+and generated corpora are not automatically covered by this notice. See
+README.md for the licensing and redistribution boundaries.
