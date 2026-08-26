@@ -71,7 +71,7 @@ Create a language-specific phonology file from the reference template and
 fill in its valid characters and OCR confusion pairs:
 
 ```sh
-cp references/phonology_template.md lani_phonology.md
+cp references/phonology_template.md outputs/lani_phonology.md
 ```
 
 Run the installed command:
@@ -84,7 +84,7 @@ nusantara-corpus-extractor \
   --lang-family "Trans-New Guinea" \
   --pivot-code ind \
   --pivot-name "Bahasa Indonesia" \
-  --phonology lani_phonology.md \
+  --phonology outputs/lani_phonology.md \
   --output-dir outputs
 ```
 

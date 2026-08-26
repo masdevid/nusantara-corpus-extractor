@@ -43,10 +43,17 @@ agents/extraction-agent.md         ← the agent's operating loop/spec —
 scripts/
   models.py             domain model: Language (fully configurable, no
                         Bahasa Indonesia default pivot), DictionaryEntry, FlaggedTerm (with
-                        web-check hooks), PatternInsight, ExtractionSession,
-                        QualityReport
+                        web-check hooks), PatternInsight, BookProfile,
+                        ExtractionSession, QualityReport
   pdf_parser.py         detects digital-text vs image-PDF, extracts raw pages
-                        (OCR via pytesseract, lang hint from Language.pivot_code)
+                        (OCR via pytesseract, lang hint from Language.pivot_code);
+                        also catches furniture-only text layers (headers/page
+                        numbers over a scan) and OCRs those pages instead
+  book_profiler.py      learns what the book IS before extraction: classifies
+                        kind (dictionary / kids_picture_book / teaching_book /
+                        grammar_morphology / mixed), splits front-matter /
+                        body / back-matter zones, detects entry conventions,
+                        suggests phonology-ref settings → book_profile.md
   entry_extractor.py    raw page text → DictionaryEntry objects
   typo_corrector.py     OCR-confusion + orthography-aware typo pass; flags
                         entries stuck across passes for optional web-check
@@ -70,8 +77,8 @@ assets/
 
 ## Workflow
 
-1. **Set up the language.** Copy `references/phonology_template.md` to a
-   project-specific `<language>_phonology.md` and fill in the orthography
+1. **Set up the language.** Copy `references/phonology_template.md` to
+   `outputs_<lang>/<lang>_phonology.md` (e.g. `outputs_sentani/sentani_phonology.md`) and fill in the orthography
    rules and known OCR pitfalls (see `references/quality_loop_guide.md` for
    what to include). Skip this step if the language already has one.
 
@@ -79,6 +86,16 @@ assets/
    full operating loop, then either:
    - drive it yourself step-by-step using the `scripts/*.py` modules, or
    - invoke `scripts/cli.py` as a single command for a first full pass.
+
+   The loop profiles the book first (`book_profiler.py` → 
+   `book_profile.md`): it detects whether this is a standard dictionary,
+   a kids' picture book, a teaching workbook, or a grammar/morphology
+   booklet — none of which follow the standard format — splits
+   front-matter guides from the entry body, and suggests layout settings.
+   Check its findings against real pages before trusting them; merge any
+   suggestions into the phonology ref. Books with no dictionary-like body
+   (workbooks, picture books) are left un-extracted rather than forced
+   through headword–gloss parsing.
 
 3. **Check pattern_insights.md before flagged_terms.md.** Each pass writes
    `pattern_insights.md` alongside the flags — if 8 flags all trace back to

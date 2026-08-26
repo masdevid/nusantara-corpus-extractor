@@ -8,9 +8,17 @@ env/
 .DS_Store
 
 # Local source material and generated extraction output
-outputs/
+outputs*/
+*.egg-info/
 *.pdf
 *.jsonl
+
+# Project-local opencode config and agent scaffolding (non-skill)
+opencode.json
+opencode.jsonc
+AGENTS.md
+docs/
+CLAUDE.md
 
 # Local tooling and test artifacts
 .pytest_cache/

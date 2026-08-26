@@ -1,6 +1,6 @@
 # <Language Name> Phonology & Orthography Reference
 
-Copy this file to `<language_code>_phonology.md` and fill it in before
+Copy this file to `outputs_<lang>/<language_code>_phonology.md` (e.g. `outputs_sentani/sentani_phonology.md`) and fill it in before
 running the extraction loop for a new language. `typo_corrector.py` parses
 the `## Valid characters` and `## OCR confusion pairs` sections directly —
 keep those headers exact.
@@ -38,6 +38,40 @@ know before reviewing flags — font quirks in the scan, a recurring
 mis-scan of a particular letter combination, pages with unusually faint
 print, etc.
 -->
+
+## Digital text layer
+
+<!-- Set `trusted: no` when the PDF's embedded text layer is itself
+OCR-derived (publisher scans) — the correction pass then applies to
+digital-text entries too, instead of skipping everything at confidence 1.0.
+Delete this section if the text layer is clean. -->
+
+- trusted: yes
+
+## Entry splitting
+
+<!-- Optional. A zero-width regex; page text is cut into entry chunks
+before every match. Use when several entries share a line and line starts
+carry no boundary signal. Delete this section to use line-based extraction.
+Example (Sentani): -->
+
+- split_before: `\s+(?=a\s+[•·.]{1,3}\s)`
+
+## Entry pattern
+
+<!-- Optional override for scripts/entry_extractor.ENTRY_PATTERN. Must
+have named groups `headword` and `gloss` (`pos` optional). Delete this
+section to use the default pattern. Example: -->
+
+- pattern: `^(?P<headword>[A-Za-zÀ-ÿ'’\-]+)\s*(?:\((?P<pos>[a-z.]+)\))?\s*(?P<gloss>.+)$`
+
+## Headword shape
+
+<!-- Optional. Entries whose headword doesn't match this regex are skipped
+by the correction pass — keeps confusion pairs like `rn`→`m` from
+"fixing" foreign/prose words. Delete this section to correct everything. -->
+
+- pattern: `^[A-Za-zÀ-ÿ'’\-]+$`
 
 ## Notes on pivot gloss conventions
 
