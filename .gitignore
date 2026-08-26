@@ -8,6 +8,7 @@ env/
 .DS_Store
 
 # Local source material and generated extraction output
+out/
 outputs*/
 *.egg-info/
 *.pdf
@@ -16,12 +17,21 @@ outputs*/
 # Project-local opencode config and agent scaffolding (non-skill)
 opencode.json
 opencode.jsonc
+.opencode/
 AGENTS.md
 docs/
 CLAUDE.md
+
+# Ralph loop (local)
+ralph.sh
+.ralph-config.json
 
 # Local tooling and test artifacts
 .pytest_cache/
 .mypy_cache/
 .coverage
 htmlcov/
+
+# Ralph loop artifacts
+.ralph/
+ralph.log

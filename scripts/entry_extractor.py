@@ -27,26 +27,50 @@ ENTRY_PATTERN = re.compile(
 # page-level OCR confidence as a starting point for each entry.
 DEFAULT_DIGITAL_CONFIDENCE = 1.0
 
+# In split mode, a candidate longer than this isn't an entry — it's a page
+# (or slab of pages) the split pattern couldn't cut. Emitting it as one
+# entry would bake a bogus headword into the corpus; skip and count instead.
+MAX_CHUNK_CHARS = 800
+
 
 class EntryExtractor:
-    def __init__(self, language: Language, entry_pattern: re.Pattern = ENTRY_PATTERN) -> None:
+    def __init__(
+        self,
+        language: Language,
+        entry_pattern: re.Pattern | None = None,
+        split_pattern: re.Pattern | None = None,
+    ) -> None:
         self.language = language
-        self.entry_pattern = entry_pattern
+        self.entry_pattern = entry_pattern or ENTRY_PATTERN
+        # Optional zero-width "split before this" regex (from the language's
+        # phonology ref). When set, page text is joined into one block and
+        # cut into entry chunks at every match — for dictionaries where
+        # several entries share a line and line starts mean nothing.
+        self.split_pattern = split_pattern
 
     def extract(self, pages: list[RawPage]) -> list[DictionaryEntry]:
         entries: list[DictionaryEntry] = []
         skipped = 0
+        oversized = 0
 
         for page in pages:
-            for line in self._candidate_lines(page.text):
-                match = self.entry_pattern.match(line)
+            if self.split_pattern:
+                candidates = self._split_chunks(page.text)
+            else:
+                candidates = self._candidate_lines(page.text)
+
+            for candidate in candidates:
+                if len(candidate) > MAX_CHUNK_CHARS:
+                    oversized += 1
+                    continue
+                match = self.entry_pattern.match(candidate)
                 if not match:
                     skipped += 1
                     continue
 
-                headword = match.group("headword").strip()
-                gloss = match.group("gloss").strip()
-                pos = (match.group("pos") or "").strip() or None
+                headword = (match.group("headword") or "").strip()
+                gloss = (match.group("gloss") or "").strip()
+                pos = ((match.groupdict().get("pos") or "") or "").strip() or None
 
                 if not headword or not gloss:
                     skipped += 1
@@ -66,14 +90,27 @@ class EntryExtractor:
                     )
                 )
 
+        mode = "split-pattern" if self.split_pattern else "line"
         logger.info(
-            "🧩 Extracted %d entries from %d pages (%d lines didn't match the "
-            "entry pattern — check ENTRY_PATTERN if that number looks high).",
-            len(entries), len(pages), skipped,
+            "🧩 Extracted %d entries from %d pages in %s mode (%d candidates "
+            "didn't match the entry pattern, %d oversized slabs skipped — "
+            "check the phonology ref's entry settings if those numbers look "
+            "high).",
+            len(entries), len(pages), mode, skipped, oversized,
         )
         return entries
 
     # -- internals -----------------------------------------------------
+
+    def _split_chunks(self, text: str) -> list[str]:
+        """Cuts a whole page into entry chunks at every split-pattern match.
+        Inner line breaks are collapsed to single spaces — the text layer
+        hard-wraps every few words mid-entry."""
+        assert self.split_pattern is not None
+        chunks = [
+            " ".join(c.split()) for c in self.split_pattern.split(text) if c.strip()
+        ]
+        return [c for c in chunks if c]
 
     def _candidate_lines(self, text: str) -> list[str]:
         """Splits page text into candidate entry lines. Dictionaries often

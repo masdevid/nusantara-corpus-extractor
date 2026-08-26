@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 
+from book_profiler import BookProfiler
 from corpus_writer import CorpusWriter
 from entry_extractor import EntryExtractor
 from meaning_crosscheck import MeaningCrossChecker
@@ -37,6 +38,7 @@ class QualityLoop:
         # OCR lang hint comes from the language's own pivot config — nothing
         # here is hardcoded to any specific language pair.
         self.parser = PDFParser(ocr_lang_hint=session.language.pivot_code)
+        self.profiler = BookProfiler()
         self.pattern_spotter = PatternSpotter()
 
     def run(self, existing_corpus: list[DictionaryEntry] | None = None) -> ExtractionSession:
@@ -46,12 +48,43 @@ class QualityLoop:
             self.max_iterations,
         )
 
-        # Parsing + extraction only need to happen once — subsequent passes
-        # re-run correction/crosscheck against the resolved state.
-        parse_result = self.parser.parse(self.session.source_pdf)
-        extractor = EntryExtractor(self.session.language)
-        self.session.entries = extractor.extract(parse_result.pages)
+        # Stage 1 — probe: cheap pass, no rendering/OCR. Profiling must not
+        # cost a full-book OCR on image-only scans.
+        probes = self.parser.probe(self.session.source_pdf)
 
+        # Stage 2 — profile: classify the book from digital text + a small
+        # OCR'd sample; detect zones so guides/prefaces stay out of
+        # extraction and non-dictionary books don't get force-parsed.
+        profile = self.profiler.profile(
+            probes,
+            lambda numbers: self.parser.ocr_selected(probes, numbers),
+        )
+        self.session.profile = profile
+        self.writer.write_book_profile(profile)
+
+        if not profile.body_pages:
+            logger.warning(
+                "⚠️ Profiler classified this book as '%s' with no "
+                "dictionary-like body — headword–gloss extraction does not "
+                "apply. See book_profile.md; corpus left empty.",
+                profile.book_kind,
+            )
+            self.writer.write_corpus([])
+            return self.session
+
+        # Stage 3 — full parse of the body zone only (OCR included).
+        parse_result = self.parser.parse_source(
+            self.session.source_pdf, only_pages=set(profile.body_pages)
+        )
+        for bad_page in parse_result.bad_pages:
+            logger.warning("🚩 Page %d flagged as unreadable — skipped entirely.", bad_page)
+
+        extractor = EntryExtractor(
+            self.session.language,
+            entry_pattern=self.phonology.entry_pattern,
+            split_pattern=self.phonology.entry_split,
+        )
+        self.session.entries = extractor.extract(parse_result.pages)
         for bad_page in parse_result.bad_pages:
             logger.warning("🚩 Page %d flagged as unreadable — skipped entirely.", bad_page)
 
@@ -61,7 +94,6 @@ class QualityLoop:
 
             corrector = TypoCorrector(self.phonology, pass_number)
             self.session.entries, typo_flags = corrector.correct(self.session.entries)
-
             crosschecker = MeaningCrossChecker(pass_number, self.session.language)
             meaning_flags = crosschecker.crosscheck(self.session.entries, existing_corpus)
 
@@ -87,9 +119,7 @@ class QualityLoop:
                 pass_number=pass_number,
                 entries_in=entries_in,
                 entries_out=len(self.session.entries),
-                typo_fixes_applied=sum(
-                    1 for e in self.session.entries if e.confidence < 1.0
-                ),
+                typo_fixes_applied=getattr(corrector, "last_fixes_applied", 0),
                 flags_raised=len(new_flags),
                 flags_resolved=resolved_this_pass,
                 patterns_spotted=len(patterns),
@@ -149,5 +179,15 @@ class QualityLoop:
                 flag.resolution_note = "Not re-raised in subsequent pass."
                 resolved_count += 1
 
-        self.session.flagged_terms.extend(new_flags)
+        # One flag per entry: re-raised entries keep their existing record
+        # (and original pass number) instead of piling up a duplicate every
+        # pass — otherwise open-flag counts inflate without converging.
+        fresh_flags: list = []
+        seen_this_pass: set[str] = set()
+        for flag in new_flags:
+            if flag.entry_id in previously_open_ids or flag.entry_id in seen_this_pass:
+                continue
+            seen_this_pass.add(flag.entry_id)
+            fresh_flags.append(flag)
+        self.session.flagged_terms.extend(fresh_flags)
         return resolved_count

@@ -10,8 +10,10 @@ Example (Lani → Bahasa Indonesia):
         --output-dir outputs/ \\
         --existing-corpus lani_dictionary.jsonl
 
-Bahasa Indonesia is the default pivot; pass --pivot-* to use another gloss
-language. Swap --lang-* for a different source language as needed.
+--pdf accepts a single PDF or a folder of split PDFs (one file per page
+range) — folders are expanded in natural filename order and parsed as one
+book. Bahasa Indonesia is the default pivot; pass --pivot-* to use another
+gloss language. Swap --lang-* for a different source language as needed.
 """
 
 from __future__ import annotations
@@ -66,7 +68,7 @@ def main() -> None:
         "--pivot-name", default="Bahasa Indonesia", help="display name (default: Bahasa Indonesia)"
     )
     parser.add_argument("--phonology", required=True)
-    parser.add_argument("--output-dir", default="outputs")
+    parser.add_argument("--output-dir", default="out")
     parser.add_argument("--existing-corpus", default=None)
     parser.add_argument("--max-iterations", type=int, default=DEFAULT_MAX_ITERATIONS)
     args = parser.parse_args()

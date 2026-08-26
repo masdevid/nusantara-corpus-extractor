@@ -182,6 +182,64 @@ class QualityReport:
 
 
 @dataclass
+class BookProfile:
+    """What the profiler learned about THIS book before extraction runs.
+    🔍
+
+    Not every source looks like a standard headword–gloss dictionary:
+    kids' picture books, morphology/grammar booklets, and dictionaries
+    with long front-matter guides all need different handling. The
+    profile records the book kind, its page zones, the entry conventions
+    it detected, and suggested phonology-ref settings — so extraction is
+    driven by what the book actually is, not by an assumed format.
+    """
+
+    book_kind: str = "unknown"        # dictionary | kids_picture_book | grammar_morphology | mixed | unknown
+    front_matter_pages: list[int] = field(default_factory=list)
+    body_pages: list[int] = field(default_factory=list)
+    back_matter_pages: list[int] = field(default_factory=list)
+    unreadable_pages: list[int] = field(default_factory=list)
+    conventions: dict = field(default_factory=dict)   # markers, gloss mix, densities
+    suggested_settings: list[str] = field(default_factory=list)  # ready-to-paste phonology lines
+    notes: list[str] = field(default_factory=list)
+
+    def as_markdown(self) -> str:
+        lines = [
+            "# Book Profile 🔍",
+            "",
+            f"Detected before extraction — check these findings against the",
+            f"actual pages before trusting them.",
+            "",
+            f"**Book kind:** {self.book_kind}",
+            "",
+            "## Page zones",
+            "",
+        ]
+        def _rng(pages: list[int]) -> str:
+            if not pages:
+                return "_none_"
+            return f"{len(pages)} pages ({pages[0]}–{pages[-1]})" if len(pages) > 1 else f"page {pages[0]}"
+        lines += [
+            f"- Front matter: {_rng(self.front_matter_pages)} — guides/preface, skipped for entry extraction",
+            f"- Body: {_rng(self.body_pages)}",
+            f"- Back matter: {_rng(self.back_matter_pages)}",
+            f"- Unreadable (bad scans): {', '.join(map(str, self.unreadable_pages)) or '_none_'}",
+            "",
+            "## Conventions detected",
+            "",
+        ]
+        for k, v in self.conventions.items():
+            lines.append(f"- {k}: {v}")
+        if self.suggested_settings:
+            lines += ["", "## Suggested phonology-ref settings", ""]
+            lines += [f"- `{s}`" for s in self.suggested_settings]
+        if self.notes:
+            lines += ["", "## Notes", ""]
+            lines += [f"- {n}" for n in self.notes]
+        return "\n".join(lines) + "\n"
+
+
+@dataclass
 class ExtractionSession:
     """The full checkpointable state of one language's extraction run."""
 
@@ -191,6 +249,7 @@ class ExtractionSession:
     flagged_terms: list[FlaggedTerm] = field(default_factory=list)
     patterns: list[PatternInsight] = field(default_factory=list)
     reports: list[QualityReport] = field(default_factory=list)
+    profile: Optional[BookProfile] = None
     current_pass: int = 0
 
     def open_flags(self) -> list[FlaggedTerm]:

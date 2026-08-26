@@ -20,6 +20,8 @@ deliberately designed out.
 
 - User uploads a dictionary PDF (digital-text or scanned/image-based) and
   wants entries turned into structured data — for any language pair.
+  A folder of split PDFs (one file per page range) works too and is
+  parsed as a single book.
 - User references "the Indo Corpus Extraction pipeline/agent", or wants to
   start a *new* language's dictionary corpus the same way.
 - Any request that includes typo-correction, meaning cross-checking,
@@ -48,7 +50,9 @@ scripts/
   pdf_parser.py         detects digital-text vs image-PDF, extracts raw pages
                         (OCR via pytesseract, lang hint from Language.pivot_code);
                         also catches furniture-only text layers (headers/page
-                        numbers over a scan) and OCRs those pages instead
+                        numbers over a scan) and OCRs those pages instead;
+                        accepts a single PDF OR a folder of split PDFs
+                        (parsed in natural order as one book)
   book_profiler.py      learns what the book IS before extraction: classifies
                         kind (dictionary / kids_picture_book / teaching_book /
                         grammar_morphology / mixed), splits front-matter /
@@ -87,15 +91,18 @@ assets/
    - drive it yourself step-by-step using the `scripts/*.py` modules, or
    - invoke `scripts/cli.py` as a single command for a first full pass.
 
-   The loop profiles the book first (`book_profiler.py` → 
-   `book_profile.md`): it detects whether this is a standard dictionary,
-   a kids' picture book, a teaching workbook, or a grammar/morphology
-   booklet — none of which follow the standard format — splits
-   front-matter guides from the entry body, and suggests layout settings.
-   Check its findings against real pages before trusting them; merge any
-   suggestions into the phonology ref. Books with no dictionary-like body
-   (workbooks, picture books) are left un-extracted rather than forced
-   through headword–gloss parsing.
+   The loop profiles the book first — cheaply: digital-text pages are
+   scored for free and image pages are OCR'd only at ~24 evenly spaced
+   sample points, so a 500-page scan is classified in minutes, not an
+   hour (`book_profile.md`). It detects whether this is a standard
+   dictionary, a kids' picture book, a teaching workbook/vocabulary list,
+   or a grammar/morphology booklet — none of which follow the standard
+   format — splits front-matter guides from the entry body, and suggests
+   layout settings. Check its findings against real pages before trusting
+   them; merge any suggestions into the phonology ref. Books with no
+   dictionary-like body (workbooks, picture books) are left un-extracted
+   rather than forced through headword–gloss parsing; full OCR runs only
+   on the detected body zone.
 
 3. **Check pattern_insights.md before flagged_terms.md.** Each pass writes
    `pattern_insights.md` alongside the flags — if 8 flags all trace back to
@@ -122,9 +129,10 @@ assets/
    default 5). Read `references/quality_loop_guide.md` for the exact
    convergence + scoring rules before changing them.
 
-6. **Output.** Structured JSONL parallel corpus, plus `flagged_terms.md`,
-   `pattern_insights.md`, and a per-run `quality_report_<n>.md` for
-   traceability.
+6. **Output.** Structured JSONL parallel corpus, plus `book_profile.md`,
+   `flagged_terms.md`, `pattern_insights.md`, and a per-run
+   `quality_report_<n>.md` for traceability — all under
+   `out/<language_code>/` so each language gets its own directory.
 
 ## Notes for extending to a new language
 

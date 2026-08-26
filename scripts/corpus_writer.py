@@ -9,16 +9,25 @@ import json
 import logging
 import os
 
-from models import DictionaryEntry, FlaggedTerm, PatternInsight, QualityReport
+from models import (
+    BookProfile,
+    DictionaryEntry,
+    FlaggedTerm,
+    PatternInsight,
+    QualityReport,
+)
 
 logger = logging.getLogger("indo_corpus_extractor.corpus_writer")
 
 
 class CorpusWriter:
     def __init__(self, output_dir: str, language_code: str) -> None:
-        self.output_dir = output_dir
+        # One subdirectory per language under the shared output root
+        # (e.g. out/set/, out/lani/) so multi-language projects don't
+        # overwrite each other's artifacts.
+        self.output_dir = os.path.join(output_dir, language_code)
         self.language_code = language_code
-        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
 
     def write_corpus(self, entries: list[DictionaryEntry]) -> str:
         path = os.path.join(self.output_dir, f"{self.language_code}_dictionary.jsonl")
@@ -44,6 +53,13 @@ class CorpusWriter:
             "📝 flagged_terms.md updated — %d open, %d resolved.",
             open_count, len(flags) - open_count,
         )
+        return path
+
+    def write_book_profile(self, profile: BookProfile) -> str:
+        path = os.path.join(self.output_dir, "book_profile.md")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(profile.as_markdown())
+        logger.info("🔍 book_profile.md written — kind=%s", profile.book_kind)
         return path
 
     def write_quality_report(self, report: QualityReport) -> str:

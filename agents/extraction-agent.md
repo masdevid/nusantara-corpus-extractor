@@ -23,45 +23,62 @@ new flags**, or you've hit `max_iterations` and handed the rest to a human.
 ## The Loop
 
 ```
+0. PROFILE  BookProfiler.analyze(parsed_pages)
+            → what kind of book is this? (standard dictionary, kids'
+              picture book, teaching workbook, grammar/morphology booklet,
+              mixed) — never assume the standard format
+            → front-matter / body / back-matter zone split; guides and
+              prefaces are excluded from entry extraction
+            → entry conventions detected (markers, cross-refs, gloss
+              language mix) + suggested phonology-ref settings
+            → written to book_profile.md; VERIFY its findings against
+              real pages before trusting them — it's a heuristic pass
 1. PARSE     PDFParser.parse(source_pdf)
-             → detect digital-text vs image pages, OCR the image pages
+            → detect digital-text vs image pages, OCR the image pages
 2. EXTRACT   EntryExtractor.extract(raw_pages)
-             → raw text → DictionaryEntry objects (headword, pos, gloss, examples)
+            → raw text → DictionaryEntry objects (headword, pos, gloss, examples)
 3. CORRECT   TypoCorrector.correct(entries, phonology_ref)
-             → OCR-confusion pass + orthography validation
-             → confident fixes applied in place; ambiguous ones → FlaggedTerm
+            → OCR-confusion pass + orthography validation
+            → confident fixes applied in place; ambiguous ones → FlaggedTerm
 4. CROSSCHECK MeaningCrossChecker.crosscheck(entries, existing_corpus)
-             → duplicate headwords with divergent glosses → FlaggedTerm (web-check queued)
-             → glosses that don't round-trip sensibly against the pivot → FlaggedTerm (web-check queued)
+            → duplicate headwords with divergent glosses → FlaggedTerm (web-check queued)
+            → glosses that don't round-trip sensibly against the pivot → FlaggedTerm (web-check queued)
 5. SPOT      PatternSpotter.spot_patterns(new_flags, entries)
-             → recurring OCR substitutions, bad-page clusters, issue-type
-               hotspots → PatternInsight, written to pattern_insights.md
-             → fixing the pattern's suggested_action often clears several
-               flags on the NEXT pass — check this before working flags
-               one by one
+            → recurring OCR substitutions, bad-page clusters, issue-type
+              hotspots → PatternInsight, written to pattern_insights.md
+            → fixing the pattern's suggested_action often clears several
+              flags on the NEXT pass — check this before working flags
+              one by one
 6. REPORT    QualityLoop records a QualityReport for this pass
-             → append new flags to flagged_terms.md
-             → if new_flags == 0 or iteration == max_iterations: STOP
-             → else: surface flags + patterns, wait for resolution, GOTO 1 on resume
+            → append new flags to flagged_terms.md
+            → if new_flags == 0 or iteration == max_iterations: STOP
+            → else: surface flags + patterns, wait for resolution, GOTO 1 on resume
 7. WEB VERIFY (optional, agent-driven, not part of the scripted loop)
-             → WebVerificationQueue(session).build_queue() lists flags with
-               needs_web_check=True and a ready-made suggested_query
-             → for flags worth it (genuine meaning conflicts, duplicate
-               headwords, entries stuck low-confidence across passes — NOT
-               routine OCR typos), run web_search(task.query) yourself
-             → paraphrase what you find (normal copyright discipline — no
-               verbatim quoting), then call
-               WebVerificationQueue.record_evidence(entry_id, evidence,
-               sources, resolves_flag) to write it back onto the flag
-             → if the search doesn't give a confident answer, leave
-               resolves_flag=False and still record what you tried — saves
-               the next reviewer from repeating the same search
+            → WebVerificationQueue(session).build_queue() lists flags with
+              needs_web_check=True and a ready-made suggested_query
+            → for flags worth it (genuine meaning conflicts, duplicate
+              headwords, entries stuck low-confidence across passes — NOT
+              routine OCR typos), run web_search(task.query) yourself
+            → paraphrase what you find (normal copyright discipline — no
+                verbatim quoting), then call
+                WebVerificationQueue.record_evidence(entry_id, evidence,
+                sources, resolves_flag) to write it back onto the flag
+            → if the search doesn't give a confident answer, leave
+                resolves_flag=False and still record what you tried — saves
+                the next reviewer from repeating the same search
 8. WRITE     CorpusWriter.write(entries) → JSONL corpus (append/update, never
-             silently overwrite resolved-but-unflagged prior entries)
+            silently overwrite resolved-but-unflagged prior entries)
 ```
 
 ## Operating principles
 
+- **Profile before you parse.** Every book is different: kids' books and
+  teaching workbooks have phrases and exercises, not headword–gloss
+  entries; grammar booklets are prose with example sentences; even real
+  dictionaries disagree about layout. Run the profiler, read
+  `book_profile.md`, verify against actual pages, and adapt the phonology
+  ref's entry settings — don't force a standard format onto a book that
+  isn't.
 - **Never guess silently.** Anything below a confidence threshold (default
   0.75 — tune per language in the phonology ref) becomes a `FlaggedTerm`,
   not a best-effort autocorrection baked into the corpus.
@@ -103,10 +120,14 @@ new flags**, or you've hit `max_iterations` and handed the rest to a human.
 
 ## Outputs handed back to the user
 
-- `outputs/<language>_dictionary.jsonl` — the parallel corpus
-- `outputs/flagged_terms.md` — everything awaiting sign-off (marks which
+All artifacts land in `out/<language_code>/` — one directory per language.
+
+- `out/<lang>/<language>_dictionary.jsonl` — the parallel corpus
+- `out/<lang>/book_profile.md` — what the profiler learned about the book
+  (kind, zones, conventions, suggested settings; sample-based, so verify)
+- `out/<lang>/flagged_terms.md` — everything awaiting sign-off (marks which
   ones got resolved via web evidence vs. still need a human)
-- `outputs/pattern_insights.md` — systematic issues spotted across flags,
+- `out/<lang>/pattern_insights.md` — systematic issues spotted across flags,
   with a suggested fix for each
-- `outputs/quality_report_<n>.md` — per-pass stats (entries in/out,
+- `out/<lang>/quality_report_<n>.md` — per-pass stats (entries in/out,
   typo fixes applied, flags raised/resolved, patterns spotted, convergence)
