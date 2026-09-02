@@ -43,3 +43,6 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+          # Both the tag push and the release event fire this workflow; skip
+          # gracefully if the files were already uploaded by the other run.
+          skip_existing: true
