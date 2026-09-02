@@ -233,6 +233,10 @@ flowchart LR
 
 ## Configuration
 
+This section documents the configuration the pipeline reads. The agent
+creates and maintains this config when you give it a dictionary — the
+structure below is for reference.
+
 ### Language Setup
 
 Each language needs:
@@ -253,7 +257,8 @@ sentani = Language(
 
 ### Phonology Reference
 
-Copy the template and fill in orthography rules:
+The agent creates the per-language phonology file from the template and fills
+in the orthography rules (shown here for reference):
 
 ```bash
 cp references/phonology_template.md references/sentani_phonology.md
@@ -300,6 +305,9 @@ out/
 ```
 
 ### Step-by-Step
+
+The agent drives this workflow — it extracts each book, then merges. The
+commands below are what it runs under the hood:
 
 ```bash
 # 1. Extract each book with --book-id
@@ -490,19 +498,23 @@ package becomes available for `pip install` shortly after.
 
 ### Adding a New Language
 
-1. Create a `Language` instance:
+The agent handles this when you give it a dictionary for a new language. It:
+
+1. Creates a `Language` instance:
    ```python
    Language(code="xyz", name="XYZ", family="Austronesian",
             pivot_code="ind", pivot_name="Bahasa Indonesia")
    ```
-2. Copy and fill in `references/phonology_template.md` → `references/<lang>_phonology.md`
-3. Run extraction with `--lang-code xyz`
+2. Copies and fills in `references/phonology_template.md` → `references/<lang>_phonology.md`
+3. Runs extraction with `--lang-code xyz`
 
 ### Adding a New Dictionary
 
-1. Place the PDF in `dictionaries/`
-2. Run extraction with `--book-id <descriptive_id>`
-3. Merge into the language corpus
+The agent handles this when you give it a new PDF for an existing language. It:
+
+1. Places the PDF in `dictionaries/`
+2. Runs extraction with `--book-id <descriptive_id>`
+3. Merges into the language corpus
 
 ### Customizing Morphology Rules
 
