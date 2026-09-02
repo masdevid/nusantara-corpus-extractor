@@ -467,19 +467,9 @@ affix patterns, reduplication rules, or verb conjugation patterns.
 
 ### Repo About (description & topics)
 
-The GitHub repo's About description and topics are synced automatically by
-`.github/workflows/sync-repo-about.yml` on push (and manually via
-`workflow_dispatch`). The canonical values live in
-`.github/repo-about.json` — edit that file to change the description or
-keywords, and the action updates the repo About for you.
-
-> **Setup required:** The default `GITHUB_TOKEN` cannot edit repository
-> metadata (description/topics) — it fails with `HTTP 403`. The workflow
-> needs a fine-grained **Personal Access Token** with
-> `Administration: write` (or `Metadata: write`) permission on this repo,
-> stored as the `REPO_ABOUT_TOKEN` secret. Until that secret is set, the
-> workflow will fail with a clear error message. You can also update the
-> About manually via the repo's Settings → About panel.
+The repo's About description and topics are updated manually via the repo's
+Settings → About panel (or `gh repo edit`). The default `GITHUB_TOKEN`
+cannot edit repository metadata, so there is no CI automation for this.
 
 ### Contributing
 
