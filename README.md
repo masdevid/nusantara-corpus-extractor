@@ -460,8 +460,13 @@ The Python package is published to PyPI automatically by the
 publish a GitHub Release). It builds the sdist + wheel, runs `twine check`,
 then uploads using the `PYPI_API_TOKEN` repository secret.
 
+**Only the repo owner can publish.** The workflow is gated so it runs only
+when triggered by the owner (`github.actor == github.repository_owner`);
+collaborators pushing a tag or publishing a release will have the publish
+job skipped.
+
 ```bash
-# Bump the version in pyproject.toml, then tag and push
+# Bump the version in pyproject.toml, then tag and push (as the owner)
 git tag v0.2.0
 git push origin v0.2.0
 ```
