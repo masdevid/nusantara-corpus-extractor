@@ -78,6 +78,12 @@ npx skills list
 
 ## Quick Start
 
+Extraction and merging are **agent-driven**: install the skill, hand the agent
+a dictionary PDF, and it runs the full loop (profile → extract → correct →
+cross-check → spot → write) using the pipeline below. The commands shown here
+are what the agent executes under the hood — you don't normally type them by
+hand.
+
 ### Prerequisites
 
 ```bash
@@ -90,28 +96,32 @@ brew install tesseract
 
 ### First Extraction
 
-```bash
-# 1. Set up language (copy + fill in phonology reference)
-cp references/phonology_template.md references/sentani_phonology.md
-# Edit sentani_phonology.md with orthography rules and OCR confusion pairs
+Give the agent a dictionary PDF (or a folder of split PDFs). It will:
 
-# 2. Extract a single book
-nusantara-corpus-extractor extract \
-    --pdf "dictionaries/Set-Kamus-Sentani-Indonesia-Inggris-2.pdf" \
-    --book-id set \
-    --lang-code shj --lang-name Sentani --lang-family "Trans-New Guinea" \
-    --phonology references/sentani_phonology.md
-
-# 3. Check output
-cat out/shj/books/set/entries.jsonl
-cat out/shj/books/set/book_profile.md
-cat out/shj/books/set/flagged_terms.md
-```
+1. Set up the language — copy `references/phonology_template.md` to
+   `references/<lang>_phonology.md` and fill in orthography rules and OCR
+   confusion pairs.
+2. Run the extraction loop for a single book:
+   ```bash
+   nusantara-corpus-extractor extract \
+       --pdf "dictionaries/Set-Kamus-Sentani-Indonesia-Inggris-2.pdf" \
+       --book-id set \
+       --lang-code shj --lang-name Sentani --lang-family "Trans-New Guinea" \
+       --phonology references/sentani_phonology.md
+   ```
+3. Review the output and resolve flags:
+   ```bash
+   cat out/shj/books/set/entries.jsonl
+   cat out/shj/books/set/book_profile.md
+   cat out/shj/books/set/flagged_terms.md
+   ```
 
 ### Merge Multiple Books
 
+After the agent extracts multiple dictionaries for the same language, it
+merges them into a single corpus:
+
 ```bash
-# After extracting multiple books for the same language:
 nusantara-corpus-extractor extract --pdf "Kamus Bahasa Sentani.pdf" --book-id kamus ...
 nusantara-corpus-extractor merge --lang-code shj
 
