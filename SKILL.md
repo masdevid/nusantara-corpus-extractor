@@ -102,7 +102,7 @@ docs/diagrams/
   multi-book.md         multi-book workflow diagram
   agents.md             agent system diagram
   data-flow.md          input/output data flow diagram
-.opencode/skills/
+skills/
   conventions-management/  skill for the conventions agent: guides pattern
                           detection, phonology ref updates, conventions file
                           creation, morphology analysis

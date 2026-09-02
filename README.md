@@ -18,8 +18,8 @@ This repo ships two ways:
 | Kind | Location | Purpose |
 |------|----------|---------|
 | **Skill** | `SKILL.md` | The umbrella extraction skill: full pipeline loop, language setup, quality loop |
-| **Skill** | `.opencode/skills/conventions-management/` | Guides the conventions agent: pattern detection, phonology updates |
-| **Skill** | `.opencode/skills/linguistic-correction/` | Guides the correction agent: translation validation, homonym resolution |
+| **Skill** | `skills/conventions-management/` | Guides the conventions agent: pattern detection, phonology updates |
+| **Skill** | `skills/linguistic-correction/` | Guides the correction agent: translation validation, homonym resolution |
 | **Agent** | `agents/extraction-agent.md` | Orchestrates the full extraction loop |
 | **Agent** | `agents/conventions-agent.md` | Learns book structure, updates phonology ref |
 | **Agent** | `agents/correction-agent.md` | Validates meaning, resolves ambiguity |
@@ -470,8 +470,8 @@ Each line is a dictionary entry:
 | Skill | File | Purpose |
 |-------|------|---------|
 | Corpus Extractor | `SKILL.md` | Umbrella extraction skill: pipeline loop, language setup, quality loop |
-| Conventions Management | `.opencode/skills/conventions-management/SKILL.md` | Pattern detection, conventions workflow |
-| Linguistic Correction | `.opencode/skills/linguistic-correction/SKILL.md` | Translation validation, homonym resolution |
+| Conventions Management | `skills/conventions-management/SKILL.md` | Pattern detection, conventions workflow |
+| Linguistic Correction | `skills/linguistic-correction/SKILL.md` | Translation validation, homonym resolution |
 
 ## Publishing a release
 
