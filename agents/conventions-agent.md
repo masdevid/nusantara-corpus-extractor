@@ -166,3 +166,43 @@ Add or modify sections in `<language>_phonology.md`:
 - Multiple conflicting entry patterns seem equally valid
 - Morphology rules are ambiguous (is this a separate entry or a variant?)
 - The book uses a script or diacritic system not in the valid characters
+
+## Multi-Book Workflow
+
+When extracting multiple dictionaries for the same language:
+
+### Per-Book Conventions
+- Write `out/<lang>/books/<book_id>/conventions_<book_id>.md`
+- Snapshot of THIS book's layout — read-only after creation
+- Preserves the original format even when merged corpus differs
+
+### Cumulative Conventions
+- Maintain `out/<lang>/conventions_<lang>.md`
+- Updated after each book extraction with new patterns
+- Contains: common headword shapes, shared abbreviations, morphology rules
+- Read before extracting a new book (informs the conventions agent)
+
+### Flow for New Book
+
+```
+1. READ cumulative conventions (if exists)
+   → what patterns are already known for this language?
+   → what abbreviations, headword shapes, cross-references are common?
+
+2. RUN conventions extraction on new book
+   → detect per-book patterns
+   → compare with cumulative conventions
+   → note deviations (this book is different!)
+
+3. WRITE per-book conventions
+   → out/<lang>/books/<book_id>/conventions_<book_id>.md
+
+4. UPDATE cumulative conventions
+   → add new patterns not previously seen
+   → update shared patterns with higher confidence
+   → note book-specific deviations
+
+5. UPDATE phonology ref (if improved pattern found)
+   → only when confident (>80%)
+   → note which book revealed the improvement
+```

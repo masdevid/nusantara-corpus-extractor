@@ -1,14 +1,15 @@
 """
 CLI entry point. 🎬
 
-Example (Lani → Bahasa Indonesia):
+Single book extraction:
     python cli.py \\
-        --pdf lani_dictionary_scan.pdf \\
-        --lang-code lni --lang-name Lani --lang-family "Trans-New Guinea" \\
-        --pivot-code ind --pivot-name "Bahasa Indonesia" \\
-        --phonology lani_phonology.md \\
-        --output-dir outputs/ \\
-        --existing-corpus lani_dictionary.jsonl
+        --pdf "Set-Kamus-Sentani-Indonesia-Inggris-2.pdf" \\
+        --book-id set \\
+        --lang-code shj --lang-name Sentani --lang-family "Trans-New Guinea" \\
+        --phonology references/sentani_phonology.md
+
+Merge all books for a language:
+    python cli.py --merge --lang-code shj
 
 --pdf accepts a single PDF or a folder of split PDFs (one file per page
 range) — folders are expanded in natural filename order and parsed as one
@@ -21,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 
 from models import ExtractionSession, Language
 from quality_loop import DEFAULT_MAX_ITERATIONS, QualityLoop
@@ -50,28 +52,66 @@ def load_existing_corpus(path: str | None):
                     page_ref=row.get("page_ref"),
                     confidence=row.get("confidence", 1.0),
                     source_language=row.get("source_language", ""),
+                    source_book=row.get("source_book", ""),
+                    source_page=row.get("source_page"),
                 )
             )
     return entries
 
 
+def infer_book_id(pdf_path: str) -> str:
+    """Derive a book ID from the PDF filename."""
+    name = os.path.splitext(os.path.basename(pdf_path))[0]
+    # Clean up: lowercase, replace spaces/special chars with underscores
+    book_id = name.lower().replace(" ", "_").replace("-", "_")
+    # Remove consecutive underscores
+    while "__" in book_id:
+        book_id = book_id.replace("__", "_")
+    return book_id.strip("_")
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the Nusantara Corpus PDF Extraction loop 📖")
-    parser.add_argument("--pdf", required=True)
-    parser.add_argument("--lang-code", required=True)
-    parser.add_argument("--lang-name", required=True)
-    parser.add_argument("--lang-family", required=True)
-    parser.add_argument(
-        "--pivot-code", default="ind", help="tesseract lang code (default: ind)"
+    parser = argparse.ArgumentParser(
+        description="Nusantara Corpus PDF Extraction 📖"
     )
-    parser.add_argument(
-        "--pivot-name", default="Bahasa Indonesia", help="display name (default: Bahasa Indonesia)"
-    )
-    parser.add_argument("--phonology", required=True)
-    parser.add_argument("--output-dir", default="out")
-    parser.add_argument("--existing-corpus", default=None)
-    parser.add_argument("--max-iterations", type=int, default=DEFAULT_MAX_ITERATIONS)
+    subparsers = parser.add_subparsers(dest="command")
+
+    # --- extract (default) ---
+    extract = subparsers.add_parser("extract", help="Extract entries from a dictionary PDF")
+    extract.add_argument("--pdf", required=True, help="Path to dictionary PDF or folder of split PDFs")
+    extract.add_argument("--book-id", default=None, help="Book identifier (derived from PDF name if omitted)")
+    extract.add_argument("--lang-code", required=True, help="Language code (e.g. shj)")
+    extract.add_argument("--lang-name", required=True, help="Language name (e.g. Sentani)")
+    extract.add_argument("--lang-family", required=True, help="Language family (e.g. Trans-New Guinea)")
+    extract.add_argument("--pivot-code", default="ind", help="tesseract lang code for gloss language (default: ind)")
+    extract.add_argument("--pivot-name", default="Bahasa Indonesia", help="Gloss language name (default: Bahasa Indonesia)")
+    extract.add_argument("--phonology", required=True, help="Path to phonology reference")
+    extract.add_argument("--output-dir", default="out", help="Output directory (default: out/)")
+    extract.add_argument("--existing-corpus", default=None, help="Prior corpus for cross-checking")
+    extract.add_argument("--max-iterations", type=int, default=DEFAULT_MAX_ITERATIONS)
+
+    # --- merge ---
+    merge = subparsers.add_parser("merge", help="Merge all books for a language into one corpus")
+    merge.add_argument("--lang-code", required=True, help="Language code to merge")
+    merge.add_argument("--output-dir", default="out", help="Output directory (default: out/)")
+
     args = parser.parse_args()
+
+    if args.command == "merge":
+        from corpus_merger import CorpusMerger
+
+        merger = CorpusMerger(output_dir=args.output_dir, language_code=args.lang_code)
+        result = merger.merge()
+        print(f"\n🔗 Merged {result['entries_in']} entries from {result['books']} books → {result['entries_out']} entries.")
+        if result["conflicts"]:
+            print(f"🔀 {result['conflicts']} conflict(s) flagged — see cross_book_conflicts.md")
+        return
+
+    # Default: extract
+    if not args.pdf:
+        parser.error("--pdf is required for extraction")
+
+    book_id = args.book_id or infer_book_id(args.pdf)
 
     language = Language(
         code=args.lang_code,
@@ -87,6 +127,7 @@ def main() -> None:
         phonology_path=args.phonology,
         output_dir=args.output_dir,
         max_iterations=args.max_iterations,
+        book_id=book_id,
     )
     existing_corpus = load_existing_corpus(args.existing_corpus)
     loop.run(existing_corpus=existing_corpus)
@@ -107,6 +148,9 @@ def main() -> None:
 
     if session.patterns:
         print(f"🧠 {len(session.patterns)} pattern(s) spotted — see pattern_insights.md")
+
+    print(f"\n📁 Book artifacts: out/{args.lang_code}/books/{book_id}/")
+    print(f"🔗 To merge all books: python cli.py merge --lang-code {args.lang_code}")
 
 
 if __name__ == "__main__":

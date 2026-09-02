@@ -1,138 +1,322 @@
 # Nusantara Corpus PDF Extractor
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+Extracts structured parallel-corpus entries from local/low-resource-language
+dictionary PDFs (scanned or digital) into a quality-checked JSONL corpus.
+Language-agnostic by design; Bahasa Indonesia is the default pivot language.
 
-A language-agnostic pipeline for turning dictionaries from 700+ Nusantara and
-other local languages into quality-checked Bahasa Indonesia parallel corpora.
-It parses digital text or OCR, extracts entries, applies conservative
-orthography-aware corrections, cross-checks meanings, spots recurring
-problems, and produces review reports.
+## Quick Start
 
-## Install
+### Prerequisites
 
-Install the Python CLI from PyPI after a release:
+```bash
+# Python 3.10+
+pip install pytesseract Pillow
 
-```sh
-python3 -m pip install nusantara-corpus-extractor
+# Tesseract OCR (for scanned PDFs)
+brew install tesseract
 ```
 
-Or install it as a uv-managed command:
+### First Extraction
 
-```sh
-uv tool install nusantara-corpus-extractor
+```bash
+# 1. Set up language (copy + fill in phonology reference)
+cp references/phonology_template.md references/sentani_phonology.md
+# Edit sentani_phonology.md with orthography rules and OCR confusion pairs
+
+# 2. Extract a single book
+python scripts/cli.py extract \
+    --pdf "dictionaries/Set-Kamus-Sentani-Indonesia-Inggris-2.pdf" \
+    --book-id set \
+    --lang-code shj --lang-name Sentani --lang-family "Trans-New Guinea" \
+    --phonology references/sentani_phonology.md
+
+# 3. Check output
+cat out/shj/books/set/entries.jsonl
+cat out/shj/books/set/book_profile.md
+cat out/shj/books/set/flagged_terms.md
 ```
 
-## What is licensed
+### Merge Multiple Books
 
-The original source code, agent skill definition, templates, references, and
-documentation in this repository are released under the MIT License. See
-[LICENSE](LICENSE) and [NOTICE](NOTICE).
+```bash
+# After extracting multiple books for the same language:
+python scripts/cli.py extract --pdf "Kamus Bahasa Sentani.pdf" --book-id kamus ...
+python scripts/cli.py merge --lang-code shj
 
-The MIT License does not cover:
-
-- Dictionary PDFs, scans, text, glosses, or other source material supplied by
-  a user or included in a downstream project.
-- Generated corpora or OCR language data whose terms come from another owner.
-- Third-party software and libraries, which retain their own licenses.
-
-You are responsible for confirming that you may process and redistribute the
-source dictionary and resulting corpus.
-
-## Dependency licensing
-
-The parser uses `pypdfium2` for digital PDF text extraction and page rendering.
-`pypdfium2` is distributed under Apache-2.0/BSD-3-Clause terms and includes
-PDFium binaries and related dependency notices. The project MIT license does
-not relicense those dependencies; preserve the notices for any redistributed
-binary wheels. See the [pypdfium2 licensing documentation](https://pypdfium2.readthedocs.io/en/stable/license.html).
-
-The other declared Python libraries are separate dependencies and retain their
-own licenses. Keep their notices when redistributing installed or vendored
-copies.
-
-## Requirements
-
-- Python 3.10 or newer is recommended.
-- Tesseract OCR must be installed and available as `tesseract` for scanned PDFs.
-  On macOS: `brew install tesseract`.
-- Python dependencies:
-
-  ```sh
-  python3 -m pip install -e .
-  ```
-
-  Install the Tesseract language data needed by the dictionary's pivot
-  language separately.
-
-## Quick start
-
-Create a language-specific phonology file from the reference template and
-fill in its valid characters and OCR confusion pairs:
-
-```sh
-cp references/phonology_template.md outputs/lani_phonology.md
+# Check merged corpus
+cat out/shj/corpus_shj.jsonl
+cat out/shj/cross_book_conflicts.md
 ```
 
-Run the installed command:
+## Architecture
 
-```sh
-nusantara-corpus-extractor \
-  --pdf path/to/dictionary.pdf \
-  --lang-code lni \
-  --lang-name Lani \
-  --lang-family "Trans-New Guinea" \
-  --pivot-code ind \
-  --pivot-name "Bahasa Indonesia" \
-  --phonology outputs/lani_phonology.md \
-  --output-dir outputs
+The pipeline runs a **loop**, not a single pass — it iterates until
+convergence (zero new flags) or a maximum iteration count is hit.
+
+![Pipeline Overview](docs/diagrams/pipeline.md)
+
+See detailed diagrams:
+- [Multi-Book Workflow](docs/diagrams/multi-book.md) — extracting multiple
+  dictionaries for one language
+- [Agent System](docs/diagrams/agents.md) — how the three agents interact
+- [Data Flow](docs/diagrams/data-flow.md) — inputs, scripts, outputs
+
+### The Loop
+
+```
+0.  PROFILE       classify book kind, detect zones, suggest settings
+0.5 CONVENTIONS   analyze entry layout, update phonology ref (sub-agent)
+1.  PARSE         extract text from digital/OCR pages
+2.  EXTRACT       parse raw text into DictionaryEntry objects
+3.  CORRECT       fix OCR confusions, validate orthography
+4.  CROSSCHECK    cross-check glosses against corpus + pivot
+5.  SPOT          spot systematic issues across flags
+5.5 CORRECTION    validate translations, resolve homonyms (sub-agent)
+6.  REPORT        track convergence, write quality report
+7.  WEB VERIFY    (optional) search for genuinely ambiguous flags
+8.  WRITE         output JSONL corpus + markdown reports
 ```
 
-Optional existing-corpus checking:
+### Three Agents
 
-```sh
-  --existing-corpus ../path/to/existing.jsonl
+| Agent | Role | Runs |
+|-------|------|------|
+| **Extraction Agent** | Orchestrator — runs the full loop | Every pass |
+| **Conventions Agent** | Memory — learns book structure, updates config | After profiling (step 0.5) |
+| **Correction Agent** | Linguist — validates meaning, resolves ambiguity | After crosscheck (step 5.5) |
+
+## Configuration
+
+### Language Setup
+
+Each language needs:
+1. A `Language` config (code, name, family, pivot_code, pivot_name)
+2. A phonology reference file (`references/<lang>_phonology.md`)
+
+```python
+from models import Language
+
+sentani = Language(
+    code="shj",
+    name="Sentani",
+    family="Trans-New Guinea",
+    pivot_code="ind",           # tesseract lang code for gloss language
+    pivot_name="Bahasa Indonesia",
+)
 ```
 
-The output directory contains the JSONL corpus, flagged terms, pattern
-insights, and per-pass quality reports. Review unresolved flags before using
-the corpus for training or redistribution.
+### Phonology Reference
 
-## Repository layout
+Copy the template and fill in orthography rules:
 
-- `SKILL.md`: agent entry point and operating guidance.
-- `agents/`: detailed agent workflow.
-- `references/`: quality and orthography guidance.
-- `assets/`: output templates.
-- `scripts/`: parser, extractor, correction, validation, and writer modules.
-- `pyproject.toml`: package metadata and CLI entry point.
-- `outputs/`: local generated output; ignored by Git.
-
-## Development checks
-
-Compile the Python modules after changes:
-
-```sh
-python3 -m compileall -q scripts
+```bash
+cp references/phonology_template.md references/sentani_phonology.md
 ```
 
-There is currently no automated test suite. Add focused tests around parser,
-extraction, correction, and reconciliation behavior as those interfaces
-stabilize.
+Key sections:
+- **Entry splitting** — regex pattern to cut entries in the text layer
+- **Entry pattern** — regex to match a valid headword + gloss
+- **Valid characters** — character set for headwords
+- **OCR confusion pairs** — known OCR errors for this language
+- **Morphology rules** — reduplication, affixes, verb forms
 
-## Git publishing checklist
+### Pivot Language
 
-Before the first public push:
+Bahasa Indonesia is the default pivot. Override with:
 
-1. Replace the copyright holder text in `LICENSE` and `NOTICE` with the legal
-   copyright holder's name.
-2. Review every input dictionary, model, and generated corpus for permission
-   to redistribute.
-3. Confirm the `pypdfium2` wheel and PDFium dependency notices are included.
-4. Run the compilation check and inspect `git diff --check`.
-5. Make a small initial commit containing only intended project files.
-6. Tag a release after the licensing and dependency review is complete.
+```bash
+--pivot-code eng --pivot-name "English"
+```
 
-MIT grants broad copyright permissions but does not provide a patent license.
-If patent protection matters, obtain professional advice and file before a
-public disclosure where applicable.
+## Multi-Book Workflow
+
+When extracting multiple dictionaries for the same language:
+
+### Directory Structure
+
+```
+out/
+  shj/                                    # Language level
+    sentani_phonology.md                   # Shared orthography reference
+    conventions_shj.md                     # Cumulative conventions
+    corpus_shj.jsonl                       # Merged corpus from all books
+    cross_book_conflicts.md                # Conflicting headwords
+    books/
+      set/                                # Book: "Set Kamus Sentani"
+        entries.jsonl
+        book_profile.md
+        flagged_terms.md
+        conventions_set.md
+      sentani_kamus/                       # Book: "Kamus Bahasa Sentani"
+        entries.jsonl
+        book_profile.md
+        conventions_sentani_kamus.md
+```
+
+### Step-by-Step
+
+```bash
+# 1. Extract each book with --book-id
+python scripts/cli.py extract \
+    --pdf "dictionaries/Set-Kamus-Sentani.pdf" \
+    --book-id set \
+    --lang-code shj --lang-name Sentani \
+    --phonology references/sentani_phonology.md
+
+python scripts/cli.py extract \
+    --pdf "dictionaries/Kamus Bahasa Sentani.pdf" \
+    --book-id kamus \
+    --lang-code shj --lang-name Sentani \
+    --phonology references/sentani_phonology.md
+
+# 2. Merge into single language corpus
+python scripts/cli.py merge --lang-code shj
+
+# 3. Resolve cross-book conflicts (if any)
+# Edit out/shj/cross_book_conflicts.md, then re-run merge
+```
+
+### Merge Rules
+
+| Scenario | Action |
+|----------|--------|
+| Same headword, same gloss | Keep one (higher confidence wins) |
+| Same headword, similar gloss (>80% overlap) | Merge, keep longer gloss |
+| Same headword, different gloss | Merge into multi-sense entry |
+| Same headword, conflicting glosses | Flag in `cross_book_conflicts.md` |
+
+### Conventions System
+
+**Per-book** (`books/<book_id>/conventions_<book_id>.md`):
+- Snapshot of what THIS book looks like
+- Read-only after creation (preserves original format)
+
+**Cumulative** (`out/<lang>/conventions_<lang>.md`):
+- Patterns observed across ALL books for this language
+- Updated after each book extraction
+- Informs the conventions agent when extracting a new book
+
+## Multi-Language Projects
+
+### Directory Structure
+
+```
+out/
+  shj/                  # Sentani
+    corpus_shj.jsonl
+    books/
+      set/
+      kamus/
+  bhw/                  # Biak
+    corpus_bhw.jsonl
+    books/
+      kamus_biak/
+  lni/                  # Lani
+    corpus_lni.jsonl
+    books/
+      kamus_lani_wone/
+      kamus_lengkap_lani/
+```
+
+### Cross-Language Considerations
+
+- Each language has its own phonology reference, conventions, and corpus
+- The phonology reference is per-language (different orthography rules)
+- The pivot language is configurable per language (Indonesian, English, etc.)
+- There is no cross-language merging — each language produces an independent corpus
+
+## Output Format
+
+### JSONL Corpus
+
+Each line is a dictionary entry:
+
+```json
+{
+  "id": "a1b2c3d4",
+  "headword": "bo",
+  "pos": "n",
+  "gloss_pivot": "(1) pohon; (2) kayu",
+  "examples": ["bo fau ...", "bo siro ..."],
+  "page_ref": 42,
+  "confidence": 0.95,
+  "source_language": "shj",
+  "source_book": "set",
+  "source_page": 42
+}
+```
+
+### Report Files
+
+| File | Content |
+|------|---------|
+| `book_profile.md` | Book kind, page zones, conventions detected |
+| `flagged_terms.md` | Open/resolved flags with web evidence |
+| `pattern_insights.md` | Systematic issues across flags |
+| `quality_report_N.md` | Per-pass stats (entries in/out, flags, convergence) |
+| `cross_book_conflicts.md` | Conflicting headwords across books |
+
+## Reference
+
+### Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/models.py` | Domain model (Language, DictionaryEntry, FlaggedTerm, etc.) |
+| `scripts/pdf_parser.py` | PDF parsing, digital/OCR page detection |
+| `scripts/book_profiler.py` | Book classification, zone splitting |
+| `scripts/conventions_extractor.py` | Entry layout analysis, pattern detection |
+| `scripts/morphology_rules.py` | Reduplication, affix detection, root finding |
+| `scripts/translation_checker.py` | Gloss validation, example checking |
+| `scripts/homonym_resolver.py` | Homonym/variant classification |
+| `scripts/entry_extractor.py` | Raw text → DictionaryEntry objects |
+| `scripts/typo_corrector.py` | OCR confusion fixing |
+| `scripts/meaning_crosscheck.py` | Gloss cross-checking |
+| `scripts/pattern_spotter.py` | Systematic issue detection |
+| `scripts/web_verification.py` | Web search queue management |
+| `scripts/quality_loop.py` | Loop orchestrator, convergence logic |
+| `scripts/corpus_writer.py` | JSONL + markdown output |
+| `scripts/corpus_merger.py` | Multi-book corpus merging |
+| `scripts/cli.py` | CLI entry point (extract/merge) |
+
+### Agent Specifications
+
+| Agent | File | Purpose |
+|-------|------|---------|
+| Extraction Agent | `agents/extraction-agent.md` | Full loop orchestration |
+| Conventions Agent | `agents/conventions-agent.md` | Book structure analysis |
+| Correction Agent | `agents/correction-agent.md` | Linguistic validation |
+
+### Skills
+
+| Skill | File | Purpose |
+|-------|------|---------|
+| Conventions Management | `.opencode/skills/conventions-management/SKILL.md` | Pattern detection, conventions workflow |
+| Linguistic Correction | `.opencode/skills/linguistic-correction/SKILL.md` | Translation validation, homonym resolution |
+
+## Extending
+
+### Adding a New Language
+
+1. Create a `Language` instance:
+   ```python
+   Language(code="xyz", name="XYZ", family="Austronesian",
+            pivot_code="ind", pivot_name="Bahasa Indonesia")
+   ```
+2. Copy and fill in `references/phonology_template.md` → `references/<lang>_phonology.md`
+3. Run extraction with `--lang-code xyz`
+
+### Adding a New Dictionary
+
+1. Place the PDF in `dictionaries/`
+2. Run extraction with `--book-id <descriptive_id>`
+3. Merge into the language corpus
+
+### Customizing Morphology Rules
+
+Edit the conventions file or phonology reference to add language-specific
+affix patterns, reduplication rules, or verb conjugation patterns.
+
+### Contributing
+
+See `docs/` for architecture diagrams, `AGENTS.md` for agent guidelines.

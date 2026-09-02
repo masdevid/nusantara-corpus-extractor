@@ -17,9 +17,12 @@ outputs*/
 # Project-local opencode config and agent scaffolding (non-skill)
 opencode.json
 opencode.jsonc
-.opencode/
-AGENTS.md
-docs/
+.opencode/agents/
+.opencode/commands/
+.opencode/node_modules/
+.opencode/package.json
+.opencode/package-lock.json
+.opencode/.gitignore
 CLAUDE.md
 
 # Ralph loop (local)

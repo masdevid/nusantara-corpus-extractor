@@ -1,6 +1,11 @@
 """
 CorpusWriter: turns in-memory session state into the files a human/MT
 pipeline actually consumes. 💾
+
+Supports multi-book projects: when a book_id is provided, all per-book
+artifacts (entries, flagged terms, book profile, quality reports) go into
+out/<lang>/books/<book_id>/. The merged language corpus lives at
+out/<lang>/corpus_<lang>.jsonl and is produced by corpus_merger.py.
 """
 
 from __future__ import annotations
@@ -21,16 +26,39 @@ logger = logging.getLogger("indo_corpus_extractor.corpus_writer")
 
 
 class CorpusWriter:
-    def __init__(self, output_dir: str, language_code: str) -> None:
-        # One subdirectory per language under the shared output root
-        # (e.g. out/set/, out/lani/) so multi-language projects don't
-        # overwrite each other's artifacts.
-        self.output_dir = os.path.join(output_dir, language_code)
+    def __init__(
+        self,
+        output_dir: str,
+        language_code: str,
+        book_id: str | None = None,
+    ) -> None:
+        """Initialize the writer.
+
+        Args:
+            output_dir: root output directory (e.g. "out/")
+            language_code: language code (e.g. "shj")
+            book_id: book identifier (e.g. "set"). If provided, per-book
+                artifacts go to out/<lang>/books/<book_id>/.
+        """
         self.language_code = language_code
+        self.book_id = book_id
+
+        self.lang_dir = os.path.join(output_dir, language_code)
+        os.makedirs(self.lang_dir, exist_ok=True)
+
+        if book_id:
+            self.output_dir = os.path.join(self.lang_dir, "books", book_id)
+        else:
+            self.output_dir = self.lang_dir
         os.makedirs(self.output_dir, exist_ok=True)
 
     def write_corpus(self, entries: list[DictionaryEntry]) -> str:
-        path = os.path.join(self.output_dir, f"{self.language_code}_dictionary.jsonl")
+        """Write book-specific entries to entries.jsonl (or merged corpus)."""
+        if self.book_id:
+            filename = "entries.jsonl"
+        else:
+            filename = f"{self.language_code}_dictionary.jsonl"
+        path = os.path.join(self.output_dir, filename)
         with open(path, "w", encoding="utf-8") as f:
             for entry in entries:
                 f.write(json.dumps(entry.as_corpus_row(), ensure_ascii=False) + "\n")

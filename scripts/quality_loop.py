@@ -30,10 +30,15 @@ class QualityLoop:
         phonology_path: str,
         output_dir: str,
         max_iterations: int = DEFAULT_MAX_ITERATIONS,
+        book_id: str | None = None,
     ) -> None:
         self.session = session
         self.phonology = PhonologyReference.from_markdown(phonology_path)
-        self.writer = CorpusWriter(output_dir=output_dir, language_code=session.language.code)
+        self.writer = CorpusWriter(
+            output_dir=output_dir,
+            language_code=session.language.code,
+            book_id=book_id,
+        )
         self.max_iterations = max_iterations
         # OCR lang hint comes from the language's own pivot config — nothing
         # here is hardcoded to any specific language pair.

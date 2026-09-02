@@ -77,6 +77,8 @@ class DictionaryEntry:
     page_ref: Optional[int] = None
     confidence: float = 1.0            # 1.0 = digital text, degrades with OCR/edits
     source_language: str = ""          # Language.code
+    source_book: str = ""              # book ID (directory name under books/)
+    source_page: Optional[int] = None  # page number in source book
 
     def as_corpus_row(self) -> dict:
         return {
@@ -88,6 +90,8 @@ class DictionaryEntry:
             "page_ref": self.page_ref,
             "confidence": round(self.confidence, 3),
             "source_language": self.source_language,
+            "source_book": self.source_book,
+            "source_page": self.source_page,
         }
 
 

@@ -137,14 +137,57 @@ new flags**, or you've hit `max_iterations` and handed the rest to a human.
 
 ## Outputs handed back to the user
 
-All artifacts land in `out/<language_code>/` — one directory per language.
+### Per-Book Artifacts
 
-- `out/<lang>/<language>_dictionary.jsonl` — the parallel corpus
-- `out/<lang>/book_profile.md` — what the profiler learned about the book
-  (kind, zones, conventions, suggested settings; sample-based, so verify)
-- `out/<lang>/flagged_terms.md` — everything awaiting sign-off (marks which
-  ones got resolved via web evidence vs. still need a human)
-- `out/<lang>/pattern_insights.md` — systematic issues spotted across flags,
-  with a suggested fix for each
-- `out/<lang>/quality_report_<n>.md` — per-pass stats (entries in/out,
-  typo fixes applied, flags raised/resolved, patterns spotted, convergence)
+When `--book-id` is provided, all per-book artifacts go to
+`out/<lang>/books/<book_id>/`:
+
+- `entries.jsonl` — extracted entries for this specific book
+- `book_profile.md` — what the profiler learned about this book
+- `flagged_terms.md` — flags from this book's extraction
+- `pattern_insights.md` — patterns spotted in this book
+- `quality_report_<n>.md` — per-pass stats
+- `conventions_<book_id>.md` — conventions snapshot for this book
+
+### Language-Level Artifacts
+
+Always at `out/<lang>/`:
+
+- `corpus_<lang>.jsonl` — merged corpus from all books (run `corpus_merger.py`)
+- `conventions_<lang>.md` — cumulative conventions across all books
+- `cross_book_conflicts.md` — conflicting headwords across books
+
+## Multi-Book Workflow
+
+When extracting multiple dictionaries for the same language:
+
+```
+1. EXTRACT book A
+   python cli.py extract --pdf bookA.pdf --book-id book_a --lang-code shj ...
+
+2. EXTRACT book B
+   python cli.py extract --pdf bookB.pdf --book-id book_b --lang-code shj ...
+
+3. MERGE all books
+   python cli.py merge --lang-code shj
+
+4. RESOLVE conflicts (if any)
+   → edit out/shj/cross_book_conflicts.md
+   → re-run merge
+```
+
+### Entry Source Tracking
+
+Every entry in the corpus includes:
+- `source_book`: which book this entry came from
+- `source_page`: page number in the source book
+- `source_language`: language code
+
+This lets reviewers trace any entry back to its original dictionary.
+
+### Conventions Accumulation
+
+- Each book gets its own conventions snapshot (per-book)
+- Patterns accumulate into the language-level conventions file
+- The conventions agent reads cumulative conventions before extracting
+  a new book, so later books benefit from earlier books' patterns

@@ -169,3 +169,38 @@ New patterns discovered during correction:
 - A translation is genuinely ambiguous between two meanings
 - Morphology rules are unclear (is this a separate entry or a form?)
 - The conventions file has conflicting patterns for the same phenomenon
+- Cross-book conflicts (same headword, different glosses across books)
+
+## Multi-Book Awareness
+
+When extracting multiple dictionaries for the same language:
+
+### Cross-Book Duplicate Detection
+- Before correcting a headword, check the merged corpus for existing entries
+- Same headword from different books → flag for merge (not just duplicate)
+- Same headword, same gloss across books → higher confidence
+- Same headword, different gloss across books → flag in `cross_book_conflicts.md`
+
+### Cross-Book Flagging
+New flag type: `cross_book_conflict`
+- When: same headword appears in 2+ books with different glosses
+- Resolution: merge into multi-sense entry OR flag for human review
+- Record: which books disagree, what the conflicting glosses are
+
+### Merge Protocol
+When the same headword appears across books:
+
+```
+1. CHECK merged corpus for existing entries
+   → does this headword already exist from another book?
+
+2. COMPARE glosses
+   → same gloss: merge, keep higher confidence
+   → similar gloss (overlap > 80%): merge, keep longer gloss
+   → different gloss: create multi-sense entry with numbered senses
+   → conflicting gloss: flag in cross_book_conflicts.md
+
+3. RECORD source books
+   → source_book field lists all books this entry came from
+   → helps reviewers trace back to source dictionaries
+```

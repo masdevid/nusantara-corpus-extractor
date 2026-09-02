@@ -91,8 +91,18 @@ scripts/
   quality_loop.py        orchestrates parse→extract→correct→crosscheck→
                         pattern-spot→write until convergence, updates
                         flagged_terms.md + pattern_insights.md
-  corpus_writer.py      writes/appends JSONL corpus + markdown reports
-  cli.py                entry point wiring the above together
+  corpus_writer.py      writes/appends JSONL corpus + markdown reports;
+                        supports per-book subdirectories via book_id
+  corpus_merger.py      merges per-book entries.jsonl into a single
+                        language corpus; handles multi-sense merging,
+                        cross-book conflicts, source_book tracking
+  cli.py                entry point: extract (single book) or merge (all books)
+  test_extract.py       helper for testing extraction patterns
+docs/diagrams/
+  pipeline.md           full extraction loop diagram (Mermaid)
+  multi-book.md         multi-book workflow diagram
+  agents.md             agent system diagram
+  data-flow.md          input/output data flow diagram
 .opencode/skills/
   conventions-management/  skill for the conventions agent: guides pattern
                           detection, phonology ref updates, conventions file
@@ -170,6 +180,28 @@ assets/
    `flagged_terms.md`, `pattern_insights.md`, and a per-run
    `quality_report_<n>.md` for traceability — all under
    `out/<language_code>/` so each language gets its own directory.
+
+7. **Multi-book merging.** When extracting multiple dictionaries for the
+   same language, each book gets its own subdirectory under
+   `out/<lang>/books/<book_id>/`. After all books are extracted, merge
+   them into a single language corpus:
+
+   ```bash
+   python scripts/cli.py merge --lang-code <lang>
+   ```
+
+   This produces `out/<lang>/corpus_<lang>.jsonl` with:
+   - Same headword, same gloss → kept once (higher confidence wins)
+   - Same headword, different gloss → merged into multi-sense entry
+   - Same headword, conflicting glosses → flagged in `cross_book_conflicts.md`
+
+   Every entry retains `source_book` and `source_page` for traceability.
+
+   See detailed diagrams:
+   - [Pipeline Workflow](docs/diagrams/pipeline.md)
+   - [Multi-Book Workflow](docs/diagrams/multi-book.md)
+   - [Agent System](docs/diagrams/agents.md)
+   - [Data Flow](docs/diagrams/data-flow.md)
 
 ## Notes for extending to a new language
 
