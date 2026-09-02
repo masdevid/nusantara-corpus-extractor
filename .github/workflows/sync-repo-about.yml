@@ -21,8 +21,19 @@ jobs:
 
       - name: Update repo description and topics
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # NOTE: The default GITHUB_TOKEN cannot edit repository metadata
+          # (description/topics) — it returns HTTP 403. This workflow needs a
+          # fine-grained Personal Access Token with "Administration: write"
+          # (or "Metadata: write") permission on this repo, stored as the
+          # REPO_ABOUT_TOKEN secret. See README "Repo About" section.
+          GH_TOKEN: ${{ secrets.REPO_ABOUT_TOKEN }}
         run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::REPO_ABOUT_TOKEN secret is not set. The default GITHUB_TOKEN cannot edit repo metadata (HTTP 403)."
+            echo "::error::Create a fine-grained PAT with 'Administration: write' on this repo and store it as REPO_ABOUT_TOKEN."
+            exit 1
+          fi
+
           DESCRIPTION="$(jq -r '.description' .github/repo-about.json)"
           mapfile -t TOPICS < <(jq -r '.topics[]' .github/repo-about.json)
 
