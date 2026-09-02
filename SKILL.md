@@ -39,9 +39,16 @@ references/quality_loop_guide.md   ← read this before running the loop —
                                       cross-check tricks, and convergence rule
 references/phonology_template.md   ← per-language orthography reference;
                                       copy + fill in for each new language
-agents/extraction-agent.md         ← the agent's operating loop/spec —
-                                      read this to run the pipeline end-to-end
-                                      (including the optional web-verify step)
+agents/
+  extraction-agent.md     the agent's operating loop/spec —
+                          read this to run the pipeline end-to-end
+                          (including the optional web-verify step)
+  conventions-agent.md    sub-agent: analyzes book structure, updates
+                          phonology ref, writes conventions file,
+                          detects morphology rules (runs after profiling)
+  correction-agent.md     sub-agent: validates translations, checks examples,
+                          resolves homonyms, handles multi-sense entries
+                          (runs after crosscheck/pattern-spot)
 scripts/
   models.py             domain model: Language (fully configurable, no
                         Bahasa Indonesia default pivot), DictionaryEntry, FlaggedTerm (with
@@ -58,6 +65,18 @@ scripts/
                         grammar_morphology / mixed), splits front-matter /
                         body / back-matter zones, detects entry conventions,
                         suggests phonology-ref settings → book_profile.md
+  conventions_extractor.py  analyzes dictionary pages for entry layout,
+                        headword shapes, gloss format, cross-references;
+                        suggests split/entry patterns for the phonology ref
+  morphology_rules.py   detects and manages reduplication, affixation,
+                        verb conjugation; finds root forms, cross-references
+                        derived entries to their roots
+  translation_checker.py  validates headword–gloss alignment, checks example
+                        sentences, detects gloss language mismatches, builds
+                        web search queries for verification
+  homonym_resolver.py   detects homonyms vs. variant spellings, classifies
+                        polysemy/homonym/ocr_variant/dialect_variant,
+                        suggests merge/split actions
   entry_extractor.py    raw page text → DictionaryEntry objects
   typo_corrector.py     OCR-confusion + orthography-aware typo pass; flags
                         entries stuck across passes for optional web-check
@@ -74,6 +93,13 @@ scripts/
                         flagged_terms.md + pattern_insights.md
   corpus_writer.py      writes/appends JSONL corpus + markdown reports
   cli.py                entry point wiring the above together
+.opencode/skills/
+  conventions-management/  skill for the conventions agent: guides pattern
+                          detection, phonology ref updates, conventions file
+                          creation, morphology analysis
+  linguistic-correction/  skill for the correction agent: guides translation
+                          validation, homonym resolution, multi-sense handling,
+                          web verification
 assets/
   flagged_terms_template.md
   orthography_reference_template.md
@@ -103,6 +129,17 @@ assets/
    dictionary-like body (workbooks, picture books) are left un-extracted
    rather than forced through headword–gloss parsing; full OCR runs only
    on the detected body zone.
+
+   After profiling, the **conventions agent** (`agents/conventions-agent.md`)
+   analyzes the book's actual entry layout, headword shapes, gloss format,
+   and morphology rules. It updates the phonology reference with improved
+   patterns and writes a conventions file for future runs. Load the
+   `conventions-management` skill for guidance.
+
+   After extraction and cross-checking, the **correction agent**
+   (`agents/correction-agent.md`) validates translation accuracy, checks
+   example sentences, resolves homonyms, and handles multi-sense entries.
+   Load the `linguistic-correction` skill for guidance.
 
 3. **Check pattern_insights.md before flagged_terms.md.** Each pass writes
    `pattern_insights.md` alongside the flags — if 8 flags all trace back to

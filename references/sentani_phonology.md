@@ -33,21 +33,25 @@ publisher's scan (artifacts like `rnendengar`, `mElnuju`, `s~inks`, stray
 <!-- Zero-width "cut the page before this" regex. This dictionary flows
 several entries per line with hard line-breaks every few words, so line
 starts carry no signal; only strong entry-opening markers are safe cuts.
-Precision over recall: entries without a recognizable marker stay out of
-the corpus rather than being guessed at. Currently only the verb family
-(POS `a` + dotted aspect marker) segments cleanly; noun entries need a
-lexicon-based boundary detector (see Known tricky patterns). -->
+Two families of entries exist:
+  1. Verb entries: POS `a` + dotted aspect markers + headword
+  2. Noun/other entries: bare headword (no POS marker)
+Both start with a headword that's 1–2 lowercase tokens; the split pattern
+cuts before either family. Continuation lines (examples in uppercase,
+gloss fragments, cross-refs like `KS:`) are rejoined to the preceding
+entry by the extractor's line-joining logic. -->
 
-- split_before: `\s+(?=a\s+[•·.]{1,3}\s)`
+- split_before: `(?<=\s)(?=a\s+[•·.]{0,3}\s*[a-z])|(?<=\s)(?=[a-z][a-z'-]{0,15}\s+[a-z(])`
 
 ## Entry pattern
 
 <!-- Overrides scripts/entry_extractor.ENTRY_PATTERN for this dictionary.
 Consumes the optional leading POS marker `a` and dotted aspect markers,
 then captures the headword (lowercase, 1–2 tokens) and everything after it
-as the gloss. -->
+as the gloss. Works for both verb entries (with `a` POS) and noun entries
+(without POS marker). -->
 
-- pattern: `^(?:a\s+)?[•·.]{0,3}\s*(?P<headword>[a-zà-ÿ'’\-]+(?:\s+[a-zà-ÿ'’\-]+)?)\s*(?P<gloss>.+)$`
+- pattern: `^(?:a\s+)?[•·.]{0,3}\s*(?P<headword>[a-zà-ÿ''\-]+(?:\s+[a-zà-ÿ''\-]+)?)\s*(?P<gloss>.+)$`
 
 ## Headword shape
 
@@ -64,9 +68,9 @@ English/Indonesian prose picked up from the text layer. -->
 - Compound headwords use hyphens (`hau-fau`) — keep hyphens in headwords.
 - Front matter and back matter (~10 pages) are image-only and go through
   tesseract; body pages have an embedded text layer of uneven quality.
-- Noun entries have no safe boundary marker yet — they stay unextracted
-  rather than mis-headed. Next step for recall: a lexicon-based detector
-  (Indonesian function-word list marking gloss starts), not more regex.
+- Noun entries (no POS marker) are now handled by the updated split
+  pattern. Some entries with very short glosses or unusual layouts may
+  still be missed — the extractor logs skipped candidates for review.
 - Proper-noun headwords (capitalized, e.g. `Abaele`) are out of scope for
   the entry pattern (lowercase only) — English example sentences also
   start with capitals, so a capitalized-line rule floods the corpus with

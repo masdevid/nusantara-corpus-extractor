@@ -33,6 +33,13 @@ new flags**, or you've hit `max_iterations` and handed the rest to a human.
               language mix) + suggested phonology-ref settings
             → written to book_profile.md; VERIFY its findings against
               real pages before trusting them — it's a heuristic pass
+0.5 CONVENTIONS  (sub-agent: conventions-agent.md)
+            → ConventionsExtractor.extract(pages, profile)
+              analyzes actual entry layout, headword shapes, gloss format
+            → updates phonology ref with improved split/entry patterns
+            → writes out/<lang>/conventions_<lang>.md (persistent memory)
+            → detects morphology rules (reduplication, affixes)
+            → load skill: conventions-management
 1. PARSE     PDFParser.parse(source_pdf)
             → detect digital-text vs image pages, OCR the image pages
 2. EXTRACT   EntryExtractor.extract(raw_pages)
@@ -49,6 +56,16 @@ new flags**, or you've hit `max_iterations` and handed the rest to a human.
             → fixing the pattern's suggested_action often clears several
               flags on the NEXT pass — check this before working flags
               one by one
+5.5 CORRECTION  (sub-agent: correction-agent.md)
+            → TranslationChecker.check_entries(entries)
+              validates translation accuracy, checks examples
+            → HomonymResolver.analyze(entries)
+              detects homonyms vs. variants, suggests merge/split
+            → MorphologyRules.analyze_entries(entries)
+              flags affixed forms that should cross-reference root
+            → for flags needing web evidence: build queries, run
+              web_search, record evidence, mark resolved or escalate
+            → load skill: linguistic-correction
 6. REPORT    QualityLoop records a QualityReport for this pass
             → append new flags to flagged_terms.md
             → if new_flags == 0 or iteration == max_iterations: STOP
