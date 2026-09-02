@@ -31,6 +31,18 @@ deliberately designed out.
   this skill's loop can queue those for a quick web search instead of
   requiring a human to resolve every single one.
 
+## Prerequisites
+
+Before running any pipeline commands, install the Python package:
+
+```bash
+pip install nusantara-corpus-extractor
+```
+
+This provides the `nusantara-corpus-extractor` CLI used by all agents below.
+The package must be installed once per environment; after that the agents
+can call it freely.
+
 ## Architecture (domain model first)
 
 ```
