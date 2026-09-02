@@ -5,17 +5,20 @@ entries from local/low-resource-language dictionary PDFs (scanned or digital)
 into a quality-checked JSONL corpus. Language-agnostic by design; Bahasa
 Indonesia is the default pivot language.
 
-This repo is not a plain Python module — it ships as a set of **agent skills**
-(`.opencode/skills/`) and **agent specs** (`agents/`) that you install into
-your AI coding harness (opencode, Claude Code, etc.), backed by the Python
-pipeline in `scripts/`.
+This repo ships two ways:
+
+- **Agent skills** (`skills/`) + **agent specs** (`agents/`) that you install
+  into your AI coding harness (opencode, Claude Code, etc.) with a single
+  `npx skills add` command.
+- **A Python package** (`nusantara-corpus-extractor`) on PyPI that provides
+  the extraction pipeline (`scripts/`) as an installable CLI.
 
 ## What's in the box
 
 | Kind | Location | Purpose |
 |------|----------|---------|
-| **Skill** | `.opencode/skills/conventions-management/` | Guides the conventions agent: pattern detection, phonology updates |
-| **Skill** | `.opencode/skills/linguistic-correction/` | Guides the correction agent: translation validation, homonym resolution |
+| **Skill** | `skills/conventions-management/` | Guides the conventions agent: pattern detection, phonology updates |
+| **Skill** | `skills/linguistic-correction/` | Guides the correction agent: translation validation, homonym resolution |
 | **Agent** | `agents/extraction-agent.md` | Orchestrates the full extraction loop |
 | **Agent** | `agents/conventions-agent.md` | Learns book structure, updates phonology ref |
 | **Agent** | `agents/correction-agent.md` | Validates meaning, resolves ambiguity |
@@ -23,45 +26,52 @@ pipeline in `scripts/`.
 
 ## Installing the skills & agents on your harness
 
-The skills and agents are plain Markdown — install them by copying (or
-symlinking) into your harness's skill/agent directories.
-
-### opencode
+The skills are distributed as agent skills (each a `SKILL.md` with YAML
+frontmatter) and install with the [open agent skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
-# Skills → your project's .opencode/skills/
-mkdir -p .opencode/skills
-cp -R .opencode/skills/conventions-management .opencode/skills/
-cp -R .opencode/skills/linguistic-correction .opencode/skills/
+# List what's available
+npx skills add masdevid/nusantara-corpus-extractor --list
 
-# Agents → your project's agents/ (or .opencode/agents/ for subagents)
-cp agents/*.md agents/
+# Install both skills into your harness (opencode, Claude Code, etc.)
+npx skills add masdevid/nusantara-corpus-extractor
+
+# Or target a specific harness / skill
+npx skills add masdevid/nusantara-corpus-extractor -a opencode -a claude-code
+npx skills add masdevid/nusantara-corpus-extractor --skill conventions-management
 ```
 
-### Claude Code
+The agent specs (`agents/*.md`) are plain Markdown — copy them into your
+harness's agent directory (e.g. `agents/` or `.opencode/agents/` for
+subagents).
+
+> **Note:** The skills reference the Python pipeline in `scripts/`. Install
+> the Python package (below) or keep this repo checked out so the skill's
+> commands can find `scripts/`.
+
+## Installing the Python pipeline
+
+The extraction engine is published to PyPI:
 
 ```bash
-# Skills → ~/.claude/skills/ (global) or .claude/skills/ (project)
-mkdir -p .claude/skills
-cp -R .opencode/skills/conventions-management .claude/skills/
-cp -R .opencode/skills/linguistic-correction .claude/skills/
-
-# Agents → ~/.claude/agents/ or .claude/agents/
-mkdir -p .claude/agents
-cp agents/*.md .claude/agents/
+pip install nusantara-corpus-extractor
 ```
 
-> **Note:** The skills reference the Python pipeline in `scripts/`. Keep this
-> repo checked out (or installed) and point the skill's commands at the
-> `scripts/` directory, or copy `scripts/` alongside your harness config.
+This installs the `nusantara-corpus-extractor` CLI (extract / merge) plus all
+pipeline modules. For scanned PDFs you'll also need Tesseract OCR:
+
+```bash
+brew install tesseract
+```
 
 ### Verify the install
 
-Once installed, load each skill in your harness and confirm the agent specs
-resolve. A quick smoke test of the pipeline:
-
 ```bash
-python scripts/cli.py --help
+# Python pipeline
+nusantara-corpus-extractor --help
+
+# Skills (after npx skills add)
+npx skills list
 ```
 
 ## Quick Start
@@ -69,8 +79,8 @@ python scripts/cli.py --help
 ### Prerequisites
 
 ```bash
-# Python 3.10+
-pip install pytesseract Pillow
+# Install the pipeline (see "Installing the Python pipeline" above)
+pip install nusantara-corpus-extractor
 
 # Tesseract OCR (for scanned PDFs)
 brew install tesseract
@@ -84,7 +94,7 @@ cp references/phonology_template.md references/sentani_phonology.md
 # Edit sentani_phonology.md with orthography rules and OCR confusion pairs
 
 # 2. Extract a single book
-python scripts/cli.py extract \
+nusantara-corpus-extractor extract \
     --pdf "dictionaries/Set-Kamus-Sentani-Indonesia-Inggris-2.pdf" \
     --book-id set \
     --lang-code shj --lang-name Sentani --lang-family "Trans-New Guinea" \
@@ -100,8 +110,8 @@ cat out/shj/books/set/flagged_terms.md
 
 ```bash
 # After extracting multiple books for the same language:
-python scripts/cli.py extract --pdf "Kamus Bahasa Sentani.pdf" --book-id kamus ...
-python scripts/cli.py merge --lang-code shj
+nusantara-corpus-extractor extract --pdf "Kamus Bahasa Sentani.pdf" --book-id kamus ...
+nusantara-corpus-extractor merge --lang-code shj
 
 # Check merged corpus
 cat out/shj/corpus_shj.jsonl
@@ -281,20 +291,20 @@ out/
 
 ```bash
 # 1. Extract each book with --book-id
-python scripts/cli.py extract \
+nusantara-corpus-extractor extract \
     --pdf "dictionaries/Set-Kamus-Sentani.pdf" \
     --book-id set \
     --lang-code shj --lang-name Sentani \
     --phonology references/sentani_phonology.md
 
-python scripts/cli.py extract \
+nusantara-corpus-extractor extract \
     --pdf "dictionaries/Kamus Bahasa Sentani.pdf" \
     --book-id kamus \
     --lang-code shj --lang-name Sentani \
     --phonology references/sentani_phonology.md
 
 # 2. Merge into single language corpus
-python scripts/cli.py merge --lang-code shj
+nusantara-corpus-extractor merge --lang-code shj
 
 # 3. Resolve cross-book conflicts (if any)
 # Edit out/shj/cross_book_conflicts.md, then re-run merge
@@ -439,8 +449,24 @@ Each line is a dictionary entry:
 
 | Skill | File | Purpose |
 |-------|------|---------|
-| Conventions Management | `.opencode/skills/conventions-management/SKILL.md` | Pattern detection, conventions workflow |
-| Linguistic Correction | `.opencode/skills/linguistic-correction/SKILL.md` | Translation validation, homonym resolution |
+| Conventions Management | `skills/conventions-management/SKILL.md` | Pattern detection, conventions workflow |
+| Linguistic Correction | `skills/linguistic-correction/SKILL.md` | Translation validation, homonym resolution |
+
+## Publishing a release
+
+The Python package is published to PyPI automatically by the
+`.github/workflows/publish.yml` workflow whenever you push a `v*` tag (or
+publish a GitHub Release). It builds the sdist + wheel, runs `twine check`,
+then uploads using the `PYPI_API_TOKEN` repository secret.
+
+```bash
+# Bump the version in pyproject.toml, then tag and push
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The workflow uploads `dist/*` to PyPI; the `nusantara-corpus-extractor`
+package becomes available for `pip install` shortly after.
 
 ## Extending
 

@@ -62,7 +62,6 @@ py-modules = [
   "pattern_spotter",
   "pdf_parser",
   "quality_loop",
-  "test_extract",
   "translation_checker",
   "typo_corrector",
   "web_verification",

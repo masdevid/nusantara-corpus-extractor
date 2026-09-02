@@ -9,8 +9,10 @@ This repo ships as an **agent skills + sub-agents package**, not a plain
 Python module. Keep changes focused on:
 
 - The extraction pipeline (`scripts/*.py`) and its documentation
-- The package skills (`.opencode/skills/conventions-management/`,
-  `.opencode/skills/linguistic-correction/`)
+- The package skills (`skills/conventions-management/`,
+  `skills/linguistic-correction/`) — the canonical, distributable copies that
+  `npx skills add` installs. Keep the harness-local copies under
+  `.opencode/skills/` in sync with these.
 - The agent specs (`agents/*.md`)
 - The references, diagrams, and guides under `references/` and `docs/`
 
