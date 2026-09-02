@@ -7,9 +7,9 @@ Indonesia is the default pivot language.
 
 This repo ships two ways:
 
-- **Agent skills** (`skills/`) + **agent specs** (`agents/`) that you install
-  into your AI coding harness (opencode, Claude Code, etc.) with a single
-  `npx skills add` command.
+- **An agent skill** (`SKILL.md`) + **agent specs** (`agents/`) that you
+  install into your AI coding harness (opencode, Claude Code, etc.) with a
+  single `npx skills add` command.
 - **A Python package** (`nusantara-corpus-extractor`) on PyPI that provides
   the extraction pipeline (`scripts/`) as an installable CLI.
 
@@ -17,35 +17,35 @@ This repo ships two ways:
 
 | Kind | Location | Purpose |
 |------|----------|---------|
-| **Skill** | `skills/conventions-management/` | Guides the conventions agent: pattern detection, phonology updates |
-| **Skill** | `skills/linguistic-correction/` | Guides the correction agent: translation validation, homonym resolution |
+| **Skill** | `SKILL.md` | The umbrella extraction skill: full pipeline loop, language setup, quality loop |
+| **Skill** | `.opencode/skills/conventions-management/` | Guides the conventions agent: pattern detection, phonology updates |
+| **Skill** | `.opencode/skills/linguistic-correction/` | Guides the correction agent: translation validation, homonym resolution |
 | **Agent** | `agents/extraction-agent.md` | Orchestrates the full extraction loop |
 | **Agent** | `agents/conventions-agent.md` | Learns book structure, updates phonology ref |
 | **Agent** | `agents/correction-agent.md` | Validates meaning, resolves ambiguity |
 | **Pipeline** | `scripts/*.py` | The Python extraction/quality-loop engine |
 
-## Installing the skills & agents on your harness
+## Installing the skill on your harness
 
-The skills are distributed as agent skills (each a `SKILL.md` with YAML
-frontmatter) and install with the [open agent skills CLI](https://github.com/vercel-labs/skills):
+The repo ships as a single agent skill (the root `SKILL.md` with YAML
+frontmatter) and installs with the [open agent skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
 # List what's available
 npx skills add masdevid/nusantara-corpus-extractor --list
 
-# Install both skills into your harness (opencode, Claude Code, etc.)
+# Install the skill into your harness (opencode, Claude Code, etc.)
 npx skills add masdevid/nusantara-corpus-extractor
 
-# Or target a specific harness / skill
+# Or target a specific harness
 npx skills add masdevid/nusantara-corpus-extractor -a opencode -a claude-code
-npx skills add masdevid/nusantara-corpus-extractor --skill conventions-management
 ```
 
 The agent specs (`agents/*.md`) are plain Markdown — copy them into your
 harness's agent directory (e.g. `agents/` or `.opencode/agents/` for
 subagents).
 
-> **Note:** The skills reference the Python pipeline in `scripts/`. Install
+> **Note:** The skill references the Python pipeline in `scripts/`. Install
 > the Python package (below) or keep this repo checked out so the skill's
 > commands can find `scripts/`.
 
@@ -449,8 +449,9 @@ Each line is a dictionary entry:
 
 | Skill | File | Purpose |
 |-------|------|---------|
-| Conventions Management | `skills/conventions-management/SKILL.md` | Pattern detection, conventions workflow |
-| Linguistic Correction | `skills/linguistic-correction/SKILL.md` | Translation validation, homonym resolution |
+| Corpus Extractor | `SKILL.md` | Umbrella extraction skill: pipeline loop, language setup, quality loop |
+| Conventions Management | `.opencode/skills/conventions-management/SKILL.md` | Pattern detection, conventions workflow |
+| Linguistic Correction | `.opencode/skills/linguistic-correction/SKILL.md` | Translation validation, homonym resolution |
 
 ## Publishing a release
 
