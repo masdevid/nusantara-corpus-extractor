@@ -465,12 +465,6 @@ Each line is a dictionary entry:
 Edit the conventions file or phonology reference to add language-specific
 affix patterns, reduplication rules, or verb conjugation patterns.
 
-### Repo About (description & topics)
-
-The repo's About description and topics are updated manually via the repo's
-Settings → About panel (or `gh repo edit`). The default `GITHUB_TOKEN`
-cannot edit repository metadata, so there is no CI automation for this.
-
 ### Contributing
 
 See `docs/diagrams/` for architecture diagrams, `AGENTS.md` for agent guidelines.
