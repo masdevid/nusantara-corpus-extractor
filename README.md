@@ -27,8 +27,9 @@ This repo ships two ways:
 
 ## Installing the skill on your harness
 
-The repo ships as a single agent skill (the root `SKILL.md` with YAML
-frontmatter) and installs with the [open agent skills CLI](https://github.com/vercel-labs/skills):
+The repo ships as a single agent skill — `nusantara-corpus-pdf-extractor`
+(the root `SKILL.md` with YAML frontmatter) — and installs with the
+[open agent skills CLI](https://github.com/vercel-labs/skills):
 
 ```bash
 # List what's available
@@ -37,8 +38,9 @@ npx skills add masdevid/nusantara-corpus-extractor --list
 # Install the skill into your harness (opencode, Claude Code, etc.)
 npx skills add masdevid/nusantara-corpus-extractor
 
-# Or target a specific harness
+# Or target a specific harness / skill
 npx skills add masdevid/nusantara-corpus-extractor -a opencode -a claude-code
+npx skills add masdevid/nusantara-corpus-extractor --skill nusantara-corpus-pdf-extractor
 ```
 
 The agent specs (`agents/*.md`) are plain Markdown — copy them into your
