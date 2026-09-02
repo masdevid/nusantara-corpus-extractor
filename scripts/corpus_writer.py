@@ -53,11 +53,17 @@ class CorpusWriter:
         os.makedirs(self.output_dir, exist_ok=True)
 
     def write_corpus(self, entries: list[DictionaryEntry]) -> str:
-        """Write book-specific entries to entries.jsonl (or merged corpus)."""
+        """Write entries to a JSONL file.
+
+        Per-book mode (book_id set): writes entries.jsonl under
+        out/<lang>/books/<book_id>/.
+        Language-level mode (no book_id): writes corpus_<lang>.jsonl under
+        out/<lang>/ — matches the merger's output filename.
+        """
         if self.book_id:
             filename = "entries.jsonl"
         else:
-            filename = f"{self.language_code}_dictionary.jsonl"
+            filename = f"corpus_{self.language_code}.jsonl"
         path = os.path.join(self.output_dir, filename)
         with open(path, "w", encoding="utf-8") as f:
             for entry in entries:

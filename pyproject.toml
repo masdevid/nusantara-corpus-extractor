@@ -5,12 +5,25 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nusantara-corpus-extractor"
 version = "0.1.0"
-description = "Extract quality-checked parallel corpora from local-language dictionary PDFs"
+description = "AI-agent skills and sub-agents for extracting quality-checked parallel corpora from local-language dictionary PDFs — language-agnostic pipeline with OCR correction, meaning cross-checking, and multi-book merging"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
   { name = "masdevid (DepodTech)" },
+]
+keywords = [
+  "nusantara",
+  "corpus",
+  "dictionary",
+  "ocr",
+  "low-resource-language",
+  "parallel-corpus",
+  "machine-translation",
+  "agent-skill",
+  "ai-agent",
+  "papuan-languages",
+  "austronesian",
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -22,6 +35,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Topic :: Text Processing :: Linguistic",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
   "pypdfium2>=5.13",
@@ -35,14 +49,21 @@ nusantara-corpus-extractor = "cli:main"
 [tool.setuptools]
 package-dir = { "" = "scripts" }
 py-modules = [
+  "book_profiler",
   "cli",
+  "conventions_extractor",
+  "corpus_merger",
   "corpus_writer",
   "entry_extractor",
+  "homonym_resolver",
   "meaning_crosscheck",
   "models",
+  "morphology_rules",
   "pattern_spotter",
   "pdf_parser",
   "quality_loop",
+  "test_extract",
+  "translation_checker",
   "typo_corrector",
   "web_verification",
 ]

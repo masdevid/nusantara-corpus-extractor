@@ -1,8 +1,68 @@
 # Nusantara Corpus PDF Extractor
 
-Extracts structured parallel-corpus entries from local/low-resource-language
-dictionary PDFs (scanned or digital) into a quality-checked JSONL corpus.
-Language-agnostic by design; Bahasa Indonesia is the default pivot language.
+AI-agent **skills and sub-agents** that extract structured parallel-corpus
+entries from local/low-resource-language dictionary PDFs (scanned or digital)
+into a quality-checked JSONL corpus. Language-agnostic by design; Bahasa
+Indonesia is the default pivot language.
+
+This repo is not a plain Python module — it ships as a set of **agent skills**
+(`.opencode/skills/`) and **agent specs** (`agents/`) that you install into
+your AI coding harness (opencode, Claude Code, etc.), backed by the Python
+pipeline in `scripts/`.
+
+## What's in the box
+
+| Kind | Location | Purpose |
+|------|----------|---------|
+| **Skill** | `.opencode/skills/conventions-management/` | Guides the conventions agent: pattern detection, phonology updates |
+| **Skill** | `.opencode/skills/linguistic-correction/` | Guides the correction agent: translation validation, homonym resolution |
+| **Agent** | `agents/extraction-agent.md` | Orchestrates the full extraction loop |
+| **Agent** | `agents/conventions-agent.md` | Learns book structure, updates phonology ref |
+| **Agent** | `agents/correction-agent.md` | Validates meaning, resolves ambiguity |
+| **Pipeline** | `scripts/*.py` | The Python extraction/quality-loop engine |
+
+## Installing the skills & agents on your harness
+
+The skills and agents are plain Markdown — install them by copying (or
+symlinking) into your harness's skill/agent directories.
+
+### opencode
+
+```bash
+# Skills → your project's .opencode/skills/
+mkdir -p .opencode/skills
+cp -R .opencode/skills/conventions-management .opencode/skills/
+cp -R .opencode/skills/linguistic-correction .opencode/skills/
+
+# Agents → your project's agents/ (or .opencode/agents/ for subagents)
+cp agents/*.md agents/
+```
+
+### Claude Code
+
+```bash
+# Skills → ~/.claude/skills/ (global) or .claude/skills/ (project)
+mkdir -p .claude/skills
+cp -R .opencode/skills/conventions-management .claude/skills/
+cp -R .opencode/skills/linguistic-correction .claude/skills/
+
+# Agents → ~/.claude/agents/ or .claude/agents/
+mkdir -p .claude/agents
+cp agents/*.md .claude/agents/
+```
+
+> **Note:** The skills reference the Python pipeline in `scripts/`. Keep this
+> repo checked out (or installed) and point the skill's commands at the
+> `scripts/` directory, or copy `scripts/` alongside your harness config.
+
+### Verify the install
+
+Once installed, load each skill in your harness and confirm the agent specs
+resolve. A quick smoke test of the pipeline:
+
+```bash
+python scripts/cli.py --help
+```
 
 ## Quick Start
 

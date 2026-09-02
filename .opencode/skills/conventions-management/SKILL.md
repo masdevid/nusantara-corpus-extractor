@@ -105,7 +105,11 @@ Write `out/<lang>/conventions_<lang>.md` with:
 After updating, run a quick extraction test:
 
 ```bash
-python3 scripts/cli.py --lang <lang> --pdf <pdf> --pass 1 --limit 20
+python3 scripts/cli.py extract \
+    --pdf <pdf> \
+    --book-id <book_id> \
+    --lang-code <lang> --lang-name <Lang> --lang-family <Family> \
+    --phonology references/<lang>_phonology.md
 ```
 
 Check that:

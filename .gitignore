@@ -25,6 +25,12 @@ opencode.jsonc
 .opencode/.gitignore
 CLAUDE.md
 
+# Generic engineering skills not part of this corpus-extraction package
+# (kept locally for the harness, not distributed with the package)
+.opencode/skills/code-philosophy/
+.opencode/skills/frontend-philosophy/
+.opencode/skills/code-review/
+
 # Ralph loop (local)
 ralph.sh
 .ralph-config.json
