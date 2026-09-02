@@ -53,13 +53,33 @@ cat out/shj/cross_book_conflicts.md
 The pipeline runs a **loop**, not a single pass — it iterates until
 convergence (zero new flags) or a maximum iteration count is hit.
 
-![Pipeline Overview](docs/diagrams/pipeline.md)
+### Pipeline Overview
 
-See detailed diagrams:
-- [Multi-Book Workflow](docs/diagrams/multi-book.md) — extracting multiple
-  dictionaries for one language
-- [Agent System](docs/diagrams/agents.md) — how the three agents interact
-- [Data Flow](docs/diagrams/data-flow.md) — inputs, scripts, outputs
+```mermaid
+flowchart TD
+    A["PDF / Scan"] --> B["0. PROFILE\nBookProfiler"]
+    B --> B5["0.5 CONVENTIONS\nConventions Agent"]
+    B5 --> C["1. PARSE\nPDFParser"]
+    C --> D["2. EXTRACT\nEntryExtractor"]
+    D --> E["3. CORRECT\nTypoCorrector"]
+    E --> F["4. CROSSCHECK\nMeaningCrossChecker"]
+    F --> G["5. SPOT\nPatternSpotter"]
+    G --> G5["5.5 CORRECTION\nCorrection Agent"]
+    G5 --> H{"6. CONVERGED?"}
+    H -->|"new_flags == 0\nor max_iterations"| I["8. WRITE\nCorpusWriter"]
+    H -->|"flags remain"| J["7. WEB VERIFY\n(optional)"]
+    J --> C
+
+    I --> K["corpus.jsonl"]
+    I --> L["flagged_terms.md"]
+    I --> M["pattern_insights.md"]
+    I --> N["quality_report_N.md"]
+
+    style B5 fill:#e1f5fe,stroke:#0288d1
+    style G5 fill:#e1f5fe,stroke:#0288d1
+    style H fill:#fff3e0,stroke:#f57c00
+    style I fill:#e8f5e9,stroke:#388e3c
+```
 
 ### The Loop
 
@@ -79,11 +99,55 @@ See detailed diagrams:
 
 ### Three Agents
 
+```mermaid
+flowchart LR
+    subgraph EA["Extraction Agent"]
+        direction TB
+        E1["Orchestrates full loop"] --> E2["Tracks convergence"]
+        E2 --> E3["Writes reports"]
+    end
+
+    subgraph CA["Conventions Agent"]
+        direction TB
+        C1["Analyzes book structure"] --> C2["Updates phonology ref"]
+        C2 --> C3["Writes conventions file"]
+    end
+
+    subgraph CO["Correction Agent"]
+        direction TB
+        CO1["Validates translations"] --> CO2["Resolves homonyms"]
+        CO2 --> CO3["Checks morphology"]
+    end
+
+    EA -->|"step 0.5"| CA
+    EA -->|"step 5.5"| CO
+    CA -->|"updated config"| EA
+    CO -->|"corrected entries"| EA
+
+    style EA fill:#e8f5e9,stroke:#388e3c
+    style CA fill:#e1f5fe,stroke:#0288d1
+    style CO fill:#e1f5fe,stroke:#0288d1
+```
+
 | Agent | Role | Runs |
 |-------|------|------|
 | **Extraction Agent** | Orchestrator — runs the full loop | Every pass |
 | **Conventions Agent** | Memory — learns book structure, updates config | After profiling (step 0.5) |
 | **Correction Agent** | Linguist — validates meaning, resolves ambiguity | After crosscheck (step 5.5) |
+
+### Detailed Diagrams
+
+> **Note:** The Mermaid diagrams below render when viewed directly on GitHub.
+> Click each link to see the full diagram.
+
+- [Pipeline Workflow](docs/diagrams/pipeline.md) — full extraction loop with
+  step-by-step script references
+- [Multi-Book Workflow](docs/diagrams/multi-book.md) — extracting multiple
+  dictionaries, merging, conventions accumulation
+- [Agent System](docs/diagrams/agents.md) — how the three agents interact,
+  data sharing between agents
+- [Data Flow](docs/diagrams/data-flow.md) — input/output file flow, model
+  relationships (class diagram), output directory structure
 
 ## Configuration
 
@@ -177,6 +241,30 @@ python scripts/cli.py merge --lang-code shj
 ```
 
 ### Merge Rules
+
+```mermaid
+flowchart TD
+    subgraph Input["Input: entries from multiple books"]
+        A["entries_A.jsonl"] --> M{"corpus_merger.py"}
+        B["entries_B.jsonl"] --> M
+    end
+
+    subgraph Rules["Merge Rules"]
+        M -->|"same headword\nsame gloss"| S1["Keep one\n(higher confidence)"]
+        M -->|"same headword\nsimilar gloss"| S2["Merge\n(keep longer gloss)"]
+        M -->|"same headword\ndifferent gloss"| S3["Multi-sense entry\n(1) gloss_A; (2) gloss_B"]
+        M -->|"same headword\nconflicting gloss"| S4["Flag conflict\nfor human review"]
+    end
+
+    S1 --> OUT["corpus.jsonl"]
+    S2 --> OUT
+    S3 --> OUT
+    S4 --> CBC["cross_book_conflicts.md"]
+
+    style M fill:#fff3e0,stroke:#f57c00
+    style OUT fill:#e8f5e9,stroke:#388e3c
+    style CBC fill:#ffebee,stroke:#d32f2f
+```
 
 | Scenario | Action |
 |----------|--------|
@@ -319,4 +407,4 @@ affix patterns, reduplication rules, or verb conjugation patterns.
 
 ### Contributing
 
-See `docs/` for architecture diagrams, `AGENTS.md` for agent guidelines.
+See `docs/diagrams/` for architecture diagrams, `AGENTS.md` for agent guidelines.

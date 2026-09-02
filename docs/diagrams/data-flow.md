@@ -6,14 +6,13 @@ Inputs → Scripts → Outputs, and model relationships.
 
 ```mermaid
 flowchart LR
-    subgraph "Inputs"
+    subgraph Inputs["Inputs"]
         PDF["PDF / Scan"]
         PHON["phonology.md"]
         EXIST["existing corpus"]
-        PROF_IN["book_profile.md"]
     end
 
-    subgraph "Core Scripts"
+    subgraph Core["Core Scripts"]
         BP["book_profiler.py"]
         CE["conventions_extractor.py"]
         PDFP["pdf_parser.py"]
@@ -25,13 +24,13 @@ flowchart LR
         CM["corpus_merger.py"]
     end
 
-    subgraph "Correction Scripts"
+    subgraph Correction["Correction Scripts"]
         MR["morphology_rules.py"]
         TC2["translation_checker.py"]
         HR["homonym_resolver.py"]
     end
 
-    subgraph "Outputs"
+    subgraph Outputs["Outputs"]
         PROF["book_profile.md"]
         CONV["conventions.md"]
         ENT["entries.jsonl"]
@@ -78,106 +77,78 @@ flowchart LR
 ```mermaid
 classDiagram
     class Language {
-        +str code
-        +str name
-        +str family
-        +str pivot_code
-        +str pivot_name
-        +Script script
+        +code : str
+        +name : str
+        +family : str
+        +pivot_code : str
+        +pivot_name : str
     }
 
     class DictionaryEntry {
-        +str id
-        +str headword
-        +str part_of_speech
-        +str gloss_pivot
-        +list~str~ examples
-        +int page_ref
-        +float confidence
-        +str source_language
-        +str source_book
-        +int source_page
-        +as_corpus_row() dict
+        +id : str
+        +headword : str
+        +part_of_speech : str
+        +gloss_pivot : str
+        +examples : list
+        +page_ref : int
+        +confidence : float
+        +source_language : str
+        +source_book : str
+        +source_page : int
     }
 
     class FlaggedTerm {
-        +str entry_id
-        +str headword
-        +IssueType issue_type
-        +str note
-        +int raised_at_pass
-        +bool resolved
-        +str resolution_note
-        +tuple~str,str~ attempted_fix
-        +bool needs_web_check
-        +str suggested_query
-        +str web_evidence
-        +list~str~ web_sources
-        +as_markdown_row() str
+        +entry_id : str
+        +headword : str
+        +issue_type : IssueType
+        +note : str
+        +raised_at_pass : int
+        +resolved : bool
+        +needs_web_check : bool
     }
 
     class BookProfile {
-        +str book_kind
-        +list~int~ front_matter_pages
-        +list~int~ body_pages
-        +list~int~ back_matter_pages
-        +list~int~ unreadable_pages
-        +dict conventions
-        +list~str~ suggested_settings
-        +list~str~ notes
-        +as_markdown() str
+        +book_kind : str
+        +front_matter_pages : list
+        +body_pages : list
+        +back_matter_pages : list
+        +conventions : dict
     }
 
     class ExtractionSession {
-        +Language language
-        +str source_pdf
-        +list~DictionaryEntry~ entries
-        +list~FlaggedTerm~ flagged_terms
-        +list~PatternInsight~ patterns
-        +list~QualityReport~ reports
-        +BookProfile profile
-        +int current_pass
-        +open_flags() list
-        +entries_by_headword() dict
+        +language : Language
+        +source_pdf : str
+        +entries : list
+        +flagged_terms : list
+        +patterns : list
+        +reports : list
+        +profile : BookProfile
+        +current_pass : int
     }
 
     class QualityReport {
-        +int pass_number
-        +int entries_in
-        +int entries_out
-        +int typo_fixes_applied
-        +int flags_raised
-        +int flags_resolved
-        +bool converged
-        +int patterns_spotted
-        +as_markdown() str
-    }
-
-    class PatternInsight {
-        +str pattern_type
-        +str description
-        +list~str~ affected_entry_ids
-        +str suggested_action
-        +float confidence
-        +as_markdown() str
+        +pass_number : int
+        +entries_in : int
+        +entries_out : int
+        +flags_raised : int
+        +flags_resolved : int
+        +converged : bool
     }
 
     Language "1" --> "*" ExtractionSession
     ExtractionSession "1" --> "*" DictionaryEntry
     ExtractionSession "1" --> "*" FlaggedTerm
-    ExtractionSession "1" --> "*" PatternInsight
     ExtractionSession "1" --> "*" QualityReport
     ExtractionSession "1" --> "0..1" BookProfile
-    DictionaryEntry "1" --> "*" FlaggedTerm : entry_id
 ```
 
 ## Output Directory Structure
 
 ```mermaid
 flowchart TD
-    OUT["out/"] --> LANG["shj/\n(Sentani)"]
-    OUT --> LANG2["bhw/\n(Biak)"]
-    OUT --> LANG3["lni/\n(Lani)"]
+    OUT["out/"] --> LANG["shj/ — Sentani"]
+    OUT --> LANG2["bhw/ — Biak"]
+    OUT --> LANG3["lni/ — Lani"]
 
     LANG --> PHON["sentani_phonology.md"]
     LANG --> CONV_CUM["conventions_shj.md"]
@@ -185,8 +156,16 @@ flowchart TD
     LANG --> CBC["cross_book_conflicts.md"]
     LANG --> BOOKS["books/"]
 
-    BOOKS --> BK1["set/\nentries.jsonl\nbook_profile.md\nflagged_terms.md\nconventions_set.md"]
-    BOOKS --> BK2["sentani_kamus/\nentries.jsonl\nbook_profile.md\nflagged_terms.md\nconventions_sentani_kamus.md"]
+    BOOKS --> BK1["set/"]
+    BOOKS --> BK2["sentani_kamus/"]
+
+    BK1 --> BK1A["entries.jsonl"]
+    BK1 --> BK1B["book_profile.md"]
+    BK1 --> BK1C["conventions_set.md"]
+
+    BK2 --> BK2A["entries.jsonl"]
+    BK2 --> BK2B["book_profile.md"]
+    BK2 --> BK2C["conventions_sentani_kamus.md"]
 
     style OUT fill:#f5f5f5
     style LANG fill:#e1f5fe

@@ -4,7 +4,7 @@ Three agents working together in the extraction pipeline.
 
 ```mermaid
 flowchart TD
-    subgraph "Extraction Agent (orchestrator)"
+    subgraph EA["Extraction Agent (orchestrator)"]
         direction TB
         S0["0. PROFILE"] --> S05["0.5 CONVENTIONS"]
         S05 --> S1["1. PARSE"]
@@ -16,21 +16,21 @@ flowchart TD
         S55 --> S6["6. REPORT"]
     end
 
-    subgraph "Conventions Agent"
+    subgraph CA["Conventions Agent"]
         direction TB
         CA1["Read book_profile.md"] --> CA2["Sample 3-5 body pages"]
-        CA2 --> CA3["Detect patterns:\n- entry layout\n- headword shapes\n- gloss format\n- cross-references"]
+        CA2 --> CA3["Detect patterns"]
         CA3 --> CA4["Verify against 2-3 more pages"]
         CA4 --> CA5["Update phonology ref"]
         CA5 --> CA6["Write conventions file"]
     end
 
-    subgraph "Correction Agent"
+    subgraph CO["Correction Agent"]
         direction TB
-        CO1["Load flags + patterns\n+ conventions"] --> CO2["Translation check:\nvalidate glosses"]
-        CO2 --> CO3["Homonym resolution:\npolysemy vs homonym"]
-        CO3 --> CO4["Morphology check:\naffix stripping"]
-        CO4 --> CO5["Web verify:\nbuild queries"]
+        CO1["Load flags + patterns + conventions"] --> CO2["Translation check"]
+        CO2 --> CO3["Homonym resolution"]
+        CO3 --> CO4["Morphology check"]
+        CO4 --> CO5["Web verify"]
         CO5 --> CO6["Apply corrections"]
     end
 
@@ -70,18 +70,18 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    subgraph "Conventions Agent writes"
+    subgraph Writes["Conventions Agent writes"]
         P["Phonology Ref"]
         CV["Conventions File"]
     end
 
-    subgraph "Correction Agent reads"
+    subgraph Reads["Correction Agent reads"]
         F["Flagged Terms"]
         PI["Pattern Insights"]
         CV2["Conventions File"]
     end
 
-    subgraph "Correction Agent writes"
+    subgraph Out["Correction Agent writes"]
         CE["Corrected Entries"]
         RF["Resolved Flags"]
         CB["Cross-Book Conflicts"]

@@ -4,7 +4,7 @@ Extracting multiple dictionaries for one language, then merging into a single co
 
 ```mermaid
 flowchart TD
-    subgraph "Book A Extraction"
+    subgraph BookA["Book A Extraction"]
         A1["PDF: Set Kamus Sentani"] --> A2["Profile + Conventions"]
         A2 --> A3["Extract entries"]
         A3 --> A4["Quality loop"]
@@ -12,7 +12,7 @@ flowchart TD
         A4 --> A6["conventions_A.md"]
     end
 
-    subgraph "Book B Extraction"
+    subgraph BookB["Book B Extraction"]
         B1["PDF: Kamus Bahasa Sentani"] --> B2["Profile + Conventions"]
         B2 --> B3["Extract entries"]
         B3 --> B4["Quality loop"]
@@ -20,7 +20,7 @@ flowchart TD
         B4 --> B6["conventions_B.md"]
     end
 
-    subgraph "Language Level (shj)"
+    subgraph LangLevel["Language Level (shj)"]
         P["Phonology Ref"] --> M["corpus_merger.py"]
         A5 --> M
         B5 --> M
@@ -38,6 +38,19 @@ flowchart TD
 
 ## Merge Rules
 
+```mermaid
+flowchart TD
+    A["Same headword, same gloss"] --> B["Keep one — higher confidence wins"]
+    A2["Same headword, similar gloss"] --> B2["Merge — keep longer gloss"]
+    A3["Same headword, different gloss"] --> B3["Multi-sense — numbered senses"]
+    A4["Same headword, conflicting gloss"] --> B4["Flag — human review needed"]
+
+    style B fill:#e8f5e9
+    style B2 fill:#e8f5e9
+    style B3 fill:#e1f5fe
+    style B4 fill:#ffebee
+```
+
 | Scenario | Action |
 |----------|--------|
 | Same headword, same gloss | Keep one (higher confidence wins) |
@@ -50,7 +63,7 @@ flowchart TD
 {
   "headword": "bo",
   "gloss_pivot": "(1) pohon; (2) kayu; (3) hutan",
-  "source_book": ["set", "sentani_kamus"],
+  "source_book": "set,sentani_kamus",
   "examples": ["bo fau ...", "bo siro ..."],
   "confidence": 0.92
 }
@@ -60,12 +73,12 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    subgraph "Per-Book"
+    subgraph PerBook["Per-Book"]
         BA["Book A conventions"] --> |snapshot| CA["conventions_A.md"]
         BB["Book B conventions"] --> |snapshot| CB["conventions_B.md"]
     end
 
-    subgraph "Cumulative"
+    subgraph Cumulative["Cumulative"]
         CA --> |accumulate| CC["conventions_shj.md"]
         CB --> |accumulate| CC
         CC --> |update| PHON["Phonology Ref"]
