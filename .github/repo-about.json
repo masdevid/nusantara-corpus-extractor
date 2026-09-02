@@ -1,0 +1,17 @@
+{
+  "description": "AI-agent skills and sub-agents for extracting quality-checked parallel corpora from local-language dictionary PDFs — language-agnostic OCR pipeline with typo correction, meaning cross-checking, and multi-book merging",
+  "topics": [
+    "nusantara",
+    "corpus",
+    "dictionary",
+    "ocr",
+    "low-resource-language",
+    "parallel-corpus",
+    "machine-translation",
+    "agent-skill",
+    "ai-agent",
+    "papuan-languages",
+    "austronesian",
+    "python"
+  ]
+}

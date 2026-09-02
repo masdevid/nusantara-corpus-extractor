@@ -465,6 +465,14 @@ Each line is a dictionary entry:
 Edit the conventions file or phonology reference to add language-specific
 affix patterns, reduplication rules, or verb conjugation patterns.
 
+### Repo About (description & topics)
+
+The GitHub repo's About description and topics are synced automatically by
+`.github/workflows/sync-repo-about.yml` on push (and manually via
+`workflow_dispatch`). The canonical values live in
+`.github/repo-about.json` — edit that file to change the description or
+keywords, and the action updates the repo About for you.
+
 ### Contributing
 
 See `docs/diagrams/` for architecture diagrams, `AGENTS.md` for agent guidelines.

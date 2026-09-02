@@ -1,0 +1,45 @@
+name: Sync repo About
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - ".github/repo-about.json"
+      - "pyproject.toml"
+      - "README.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-about:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update repo description and topics
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DESCRIPTION="$(jq -r '.description' .github/repo-about.json)"
+          mapfile -t TOPICS < <(jq -r '.topics[]' .github/repo-about.json)
+
+          # Description
+          gh repo edit "$GITHUB_REPOSITORY" --description "$DESCRIPTION"
+
+          # Replace topics: remove current ones, then add the canonical list
+          CURRENT="$(gh repo view "$GITHUB_REPOSITORY" --json repositoryTopics --jq '.repositoryTopics[].name' 2>/dev/null || true)"
+          if [ -n "$CURRENT" ]; then
+            for t in $CURRENT; do
+              gh repo edit "$GITHUB_REPOSITORY" --delete-topic "$t"
+            done
+          fi
+          for t in "${TOPICS[@]}"; do
+            gh repo edit "$GITHUB_REPOSITORY" --add-topic "$t"
+          done
+
+          echo "✅ About synced:"
+          echo "  description: $DESCRIPTION"
+          echo "  topics: ${TOPICS[*]}"
