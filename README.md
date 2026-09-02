@@ -523,4 +523,4 @@ affix patterns, reduplication rules, or verb conjugation patterns.
 
 ### Contributing
 
-See `docs/diagrams/` for architecture diagrams, `AGENTS.md` for agent guidelines.
+See `docs/diagrams/` for architecture diagrams.

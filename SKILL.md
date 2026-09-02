@@ -97,7 +97,6 @@ scripts/
                         language corpus; handles multi-sense merging,
                         cross-book conflicts, source_book tracking
   cli.py                entry point: extract (single book) or merge (all books)
-  test_extract.py       helper for testing extraction patterns
 docs/diagrams/
   pipeline.md           full extraction loop diagram (Mermaid)
   multi-book.md         multi-book workflow diagram

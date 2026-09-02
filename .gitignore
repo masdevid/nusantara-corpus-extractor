@@ -48,3 +48,11 @@ build/
 # Ralph loop artifacts
 .ralph/
 ralph.log
+
+# Development-only files (not part of the shipped product)
+# Kept locally for working on the repo, but not tracked/distributed.
+AGENTS.md
+CONTRIBUTING.md
+docs/agents/
+scripts/test_extract.py
+scripts/requirements.txt
